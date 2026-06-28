@@ -140,6 +140,7 @@
       </div>
       <button class="stop-btn" id="stopBtn" style="display:none" onclick="stopFeed()">Avsluta amning</button>
       <div class="last" id="lastFeed"></div>
+      <button id="feedRetroBtn" style="border:none;background:transparent;color:var(--plum-soft);font-size:.75rem;cursor:pointer;padding:4px 0;margin-top:6px" onclick="openSheet('feed-manual')">+ Logga i efterhand</button>
     </div>
 
     <div class="quick">
@@ -265,6 +266,7 @@ function renderFeedUI(){
     t.classList.add('idle');t.textContent='––:––';tag.textContent='';
     stop.style.display='none';lbl.textContent='Senaste amning';
   }
+  document.getElementById('feedRetroBtn').style.display=activeFeed?'none':'block';
 }
 
 // ---------- bottom sheets ----------
@@ -294,6 +296,26 @@ function openSheet(kind){
          <div class="field" style="flex:1"><label>Till</label><input type="time" id="sTo"></div></div>
          <button class="save" onclick="saveSleepManual()">Spara</button>`}
       <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
+  } else if(kind==='feed-manual'){
+    c.innerHTML=`<h3>Amning i efterhand</h3>
+      <div class="field"><label>Sida</label>
+        <div class="chip-row" id="fChips">
+          <div class="chip active" data-v="Vänster">Vänster</div>
+          <div class="chip" data-v="Höger">Höger</div>
+          <div class="chip" data-v="">Vet ej</div>
+        </div></div>
+      <div class="row">
+        <div class="field" style="flex:1"><label>Från</label><input type="time" id="fFrom"></div>
+        <div class="field" style="flex:1"><label>Till</label><input type="time" id="fTo"></div>
+      </div>
+      ${noteField()}
+      <button class="save" onclick="saveManualFeed()">Spara</button>
+      <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
+    chipify('fChips');
+    const now=new Date(),from30=new Date(now-30*60000);
+    const hm=d=>`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    document.getElementById('fFrom').value=hm(from30);
+    document.getElementById('fTo').value=hm(now);
   } else if(kind==='note'){
     c.innerHTML=`<h3>Anteckning</h3>${noteField(true)}
       <button class="save" onclick="saveNote()">Spara</button>
@@ -336,6 +358,17 @@ async function saveNote(){
   await put(STORE,{id:uid(),type:'note',ts:Date.now(),note});
   closeSheet();render();toast('Anteckning sparad ✏️');
 }
+async function saveManualFeed(){
+  const f=document.getElementById('fFrom').value,t=document.getElementById('fTo').value;
+  if(!f||!t){toast('Fyll i båda tiderna');return;}
+  const side=document.querySelector('#fChips .chip.active').dataset.v;
+  const note=document.getElementById('noteV').value.trim();
+  const today=new Date();
+  const mk=hm=>{const[h,m]=hm.split(':');const d=new Date(today);d.setHours(h,m,0,0);return d.getTime();};
+  let from=mk(f),to=mk(t);if(to<from)to+=864e5;
+  await put(STORE,{id:uid(),type:'feed',ts:from,end:to,durMs:to-from,side,note});
+  closeSheet();render();toast('Amning sparad 🤱');
+}
 async function saveWeight(){
   const val=parseInt(document.getElementById('wVal').value,10);
   if(!val){toast('Ange vikt i gram');return;}
@@ -369,17 +402,35 @@ async function render(){
 }
 function evRow(e){
   let a='',b='';
-  if(e.type==='feed'){a='Amning';b=`${e.side||''} · ${fmtClock(e.durMs||0)}`;}
+  if(e.type==='feed'){a='Amning';b=`${e.side||''} · ${fmtClock(e.durMs||0)}`+(e.note?' · '+e.note:'');}
   else if(e.type==='diaper'){a='Blöja';b=e.val+(e.note?' · '+e.note:'');}
-  else if(e.type==='sleep'){a='Sömn';b=`${fmtClock(e.durMs||0)} · till ${fmtTime(e.end)}`;}
+  else if(e.type==='sleep'){a='Sömn';b=`${fmtClock(e.durMs||0)} · till ${fmtTime(e.end)}`+(e.note?' · '+e.note:'');}
   else if(e.type==='note'){a='Anteckning';b=e.note;}
   else if(e.type==='weight'){a='Vikt';b=e.val+' g'+(e.note?' · '+e.note:'');}
   return `<div class="ev"><div class="dot" style="background:${META_BG[e.type]}">${META_ICON[e.type]}</div>
     <div class="body"><div class="a">${a}</div><div class="b">${b||''}</div></div>
     <div class="time">${fmtTime(e.ts)}</div>
+    <button class="del" onclick="editNote('${e.id}')" title="Kommentar">✎</button>
     <button class="del" onclick="removeEv('${e.id}')">×</button></div>`;
 }
 async function removeEv(id){if(!confirm('Ta bort denna?'))return;await del(id);render();}
+function getEvent(id){return new Promise((res,rej)=>{const r=tx(STORE,'readonly').get(id);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function editNote(id){
+  const ev=await getEvent(id);if(!ev)return;
+  const c=document.getElementById('sheetCard');
+  c.innerHTML=`<h3>Anteckning</h3>
+    <div class="field"><textarea id="editNoteV" rows="3" placeholder="Skriv något…"></textarea></div>
+    <button class="save" onclick="saveEditNote('${id}')">Spara</button>
+    <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
+  document.getElementById('editNoteV').value=ev.note||'';
+  document.getElementById('sheet').classList.add('show');
+}
+async function saveEditNote(id){
+  const note=document.getElementById('editNoteV').value.trim();
+  const ev=await getEvent(id);if(!ev)return;
+  await put(STORE,{...ev,note});
+  closeSheet();render();toast('Kommentar sparad ✏️');
+}
 
 function renderStats(evs){
   const cut=Date.now()-864e5;
