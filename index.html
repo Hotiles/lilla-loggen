@@ -125,6 +125,10 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .settings-row{display:flex;gap:10px;margin-top:10px}
   .settings-row button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:13px;font-size:.9rem;color:var(--plum);cursor:pointer}
+  .backup-status{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;font-size:.82rem;line-height:1.5;color:var(--plum);margin-top:12px}
+  .backup-status.warn{border-color:var(--rose);background:#fdeee9;color:var(--plum)}
+  .backup-status .nudge{margin-top:6px;font-weight:600;color:var(--rose-deep)}
+  .backup-status .sub{opacity:.75;margin-top:4px}
   .chart-box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 10px;margin-bottom:16px;overflow:hidden}
   .chart-empty{text-align:center;color:var(--plum-soft);font-size:.82rem;padding:24px 0}
   .range-row{display:flex;gap:6px;margin-bottom:14px}
@@ -217,10 +221,17 @@
         </div>
       </div>
     </div>
-    <p style="font-size:.8rem;color:var(--plum-soft);line-height:1.5">All data sparas bara på den här telefonen. Inget skickas någonstans. Ta backup då och då med exporten nedan.</p>
-    <div class="settings-row">
-      <button onclick="exportData()">⬇️ Exportera</button>
-      <button onclick="document.getElementById('importFile').click()">⬆️ Importera</button>
+    <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line)">
+      <h3 style="color:var(--plum);margin:0 0 6px;font-size:1rem">Säkerhetskopiering</h3>
+      <p style="font-size:.8rem;color:var(--plum-soft);line-height:1.5;margin:0">All data sparas bara på den här telefonen. Inget skickas någonstans. Exportera då och då till en säker plats – det är din riktiga backup om telefonen tappas eller webbläsardatan rensas.</p>
+      <div class="backup-status" id="backupStatus">Laddar…</div>
+      <div class="settings-row">
+        <button onclick="exportData()">⬇️ Exportera</button>
+        <button onclick="document.getElementById('importFile').click()">⬆️ Importera</button>
+      </div>
+      <div class="settings-row" style="margin-top:10px">
+        <button onclick="restoreLocal()">♻️ Återställ lokal kopia</button>
+      </div>
     </div>
     <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(this.files[0])">
     <div class="settings-row" style="margin-top:10px">
@@ -263,8 +274,8 @@ function openDB(){
   });
 }
 function tx(store,mode){return db.transaction(store,mode).objectStore(store);}
-function put(store,val){return new Promise((res,rej)=>{const r=tx(store,'readwrite').put(val);r.onsuccess=res;r.onerror=()=>rej(r.error);});}
-function del(id){return new Promise((res,rej)=>{const r=tx(STORE,'readwrite').delete(id);r.onsuccess=res;r.onerror=()=>rej(r.error);});}
+function put(store,val){return new Promise((res,rej)=>{const r=tx(store,'readwrite').put(val);r.onsuccess=()=>{res(r.result);scheduleSnapshot();};r.onerror=()=>rej(r.error);});}
+function del(id){return new Promise((res,rej)=>{const r=tx(STORE,'readwrite').delete(id);r.onsuccess=()=>{res();scheduleSnapshot();};r.onerror=()=>rej(r.error);});}
 function allEvents(){return new Promise((res,rej)=>{const r=tx(STORE,'readonly').getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
 function getMeta(k){return new Promise(res=>{const r=tx(META,'readonly').get(k);r.onsuccess=()=>res(r.result?r.result.v:null);r.onerror=()=>res(null);});}
 
@@ -728,29 +739,84 @@ function show(v){
     document.getElementById('view-'+x).classList.toggle('show',x===v);
     document.getElementById('nav-'+x).classList.toggle('active',x===v);
   });
+  if(v==='settings')updateBackupStatus();
 }
 
 // ---------- name + data ----------
 async function saveName(v){await put(META,{k:'name',v});document.getElementById('babyName').textContent=v||'Bebis';}
+// ---------- säkerhetskopiering ----------
+const SNAP_KEY='lillaloggen_snapshot';
+let snapTimer=null;
+async function collectData(){
+  return {app:'lillaloggen',
+    name:await getMeta('name'),
+    birthDate:await getMeta('birthDate'),
+    birthWeight:await getMeta('birthWeight'),
+    birthLength:await getMeta('birthLength'),
+    events:await allEvents()};
+}
+async function applyData(d){
+  if(d.events)for(const e of d.events)await put(STORE,e);
+  if(d.name)await saveName(d.name);
+  if(d.birthDate!=null)await put(META,{k:'birthDate',v:d.birthDate});
+  if(d.birthWeight)await put(META,{k:'birthWeight',v:d.birthWeight});
+  if(d.birthLength)await put(META,{k:'birthLength',v:d.birthLength});
+  render();initName();await initBirthData();await renderBirthStats();
+}
+// Automatisk redundant kopia i en andra lagring (localStorage) på samma telefon.
+// Skyddar mot t.ex. trasig IndexedDB – men ersätter inte exporten utanför enheten.
+function scheduleSnapshot(){clearTimeout(snapTimer);snapTimer=setTimeout(saveSnapshot,800);}
+async function saveSnapshot(){
+  try{
+    const d=await collectData();d.snapshot=new Date().toISOString();
+    localStorage.setItem(SNAP_KEY,JSON.stringify(d));
+  }catch(e){/* localStorage full/otillgänglig – hoppa tyst */}
+  updateBackupStatus();
+}
+async function restoreLocal(){
+  const raw=(()=>{try{return localStorage.getItem(SNAP_KEY);}catch(e){return null;}})();
+  if(!raw){toast('Ingen lokal kopia hittades');return;}
+  if(!confirm('Återställ från den lokala säkerhetskopian? Befintliga loggar behålls och kompletteras.'))return;
+  try{await applyData(JSON.parse(raw));toast('Återställd från lokal kopia ♻️');updateBackupStatus();}
+  catch(e){toast('Kunde inte återställa');}
+}
+function relDays(iso){
+  const ms=Date.now()-new Date(iso).getTime();
+  if(isNaN(ms))return 'okänt';
+  const d=Math.floor(ms/864e5);
+  if(d<=0)return ms<36e5?'nyss':'idag';
+  if(d===1)return 'igår';
+  return 'för '+d+' dagar sedan';
+}
+async function updateBackupStatus(){
+  const el=document.getElementById('backupStatus');if(!el)return;
+  const last=await getMeta('lastBackup');
+  let snapInfo='';
+  try{const raw=localStorage.getItem(SNAP_KEY);
+    if(raw){const s=JSON.parse(raw);snapInfo='Automatisk lokal kopia: '+((s.events||[]).length)+' händelser, uppdaterad '+relDays(s.snapshot)+'.';}
+  }catch(e){}
+  let txt,overdue;
+  if(!last){txt='Du har aldrig exporterat en backup till en fil.';overdue=true;}
+  else{const days=Math.floor((Date.now()-new Date(last).getTime())/864e5);
+    txt='Senaste export: '+relDays(last)+'.';overdue=days>=7;}
+  el.className='backup-status'+(overdue?' warn':'');
+  el.innerHTML='<div>'+txt+'</div>'+
+    (snapInfo?'<div class="sub">'+snapInfo+'</div>':'')+
+    (overdue?'<div class="nudge">⚠️ Dags att exportera en ny backup till en säker plats.</div>':'');
+}
 async function exportData(){
-  const evs=await allEvents();const name=await getMeta('name');
-  const birthDate=await getMeta('birthDate');
-  const birthWeight=await getMeta('birthWeight');
-  const birthLength=await getMeta('birthLength');
-  const blob=new Blob([JSON.stringify({app:'lillaloggen',exported:new Date().toISOString(),name,birthDate,birthWeight,birthLength,events:evs},null,2)],{type:'application/json'});
+  const d=await collectData();d.exported=new Date().toISOString();
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='lilla-loggen-'+new Date().toISOString().slice(0,10)+'.json';a.click();
+  await put(META,{k:'lastBackup',v:d.exported});
   toast('Backup exporterad');
+  updateBackupStatus();
 }
 async function importData(file){
   if(!file)return;
   try{const d=JSON.parse(await file.text());
-    if(d.events)for(const e of d.events)await put(STORE,e);
-    if(d.name)await saveName(d.name);
-    if(d.birthDate!=null)await put(META,{k:'birthDate',v:d.birthDate});
-    if(d.birthWeight)await put(META,{k:'birthWeight',v:d.birthWeight});
-    if(d.birthLength)await put(META,{k:'birthLength',v:d.birthLength});
-    render();initName();await initBirthData();await renderBirthStats();toast('Data importerad');
+    await applyData(d);toast('Data importerad');updateBackupStatus();
   }catch(e){toast('Kunde inte läsa filen');}
 }
 async function wipe(){
@@ -758,12 +824,13 @@ async function wipe(){
     new Promise(r=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).clear();t.oncomplete=r;}),
     new Promise(r=>{const t=db.transaction(META,'readwrite');t.objectStore(META).clear();t.oncomplete=r;})
   ]);
+  try{localStorage.removeItem(SNAP_KEY);}catch(e){}
   document.getElementById('babyName').textContent='Bebis';
   document.getElementById('nameInput').value='';
   document.getElementById('birthDateInput').value='';
   document.getElementById('birthWeightInput').value='';
   document.getElementById('birthLengthInput').value='';
-  render();renderBirthStats();toast('Allt raderat');
+  render();renderBirthStats();updateBackupStatus();toast('Allt raderat');
 }
 async function initName(){const n=await getMeta('name');document.getElementById('babyName').textContent=n||'Bebis';document.getElementById('nameInput').value=n||'';}
 
@@ -771,6 +838,8 @@ async function initName(){const n=await getMeta('name');document.getElementById(
 (async()=>{
   await openDB();
   await initName();await initBirthData();await render();await renderBirthStats();renderFeedUI();
+  updateBackupStatus();
+  if(!localStorage.getItem(SNAP_KEY))scheduleSnapshot();
 })();
 
 // service worker
