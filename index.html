@@ -145,7 +145,6 @@
 
     <div class="quick">
       <button class="q" onclick="openSheet('diaper')"><span class="ico">🌼</span><span class="t">Blöja</span><span class="h">Kiss eller bajs</span></button>
-      <button class="q" onclick="openSheet('sleep')"><span class="ico">🌙</span><span class="t">Sömn</span><span class="h">Starta / logga</span></button>
       <button class="q" onclick="openSheet('note')"><span class="ico">✏️</span><span class="t">Anteckning</span><span class="h">Fritext</span></button>
       <button class="q" onclick="openSheet('weight')"><span class="ico">⚖️</span><span class="t">Vikt</span><span class="h">Gram</span></button>
     </div>
@@ -220,7 +219,7 @@
 <script>
 // ---------- IndexedDB ----------
 const DB='lillaloggen', STORE='events', META='meta';
-let db, activeFeed=null, activeSleep=null, tickInt=null;
+let db, activeFeed=null, tickInt=null;
 
 function openDB(){
   return new Promise((res,rej)=>{
@@ -246,8 +245,8 @@ const fmtClock=ms=>{const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000);ret
 const fmtTime=ts=>new Date(ts).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
 const fmtDayKey=ts=>new Date(ts).toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
 const ago=ts=>{const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'nyss';if(m<60)return m+' min sedan';const h=Math.floor(m/60);return h+' h '+(m%60)+' min sedan';};
-const META_ICON={feed:'🤱',diaper:'🌼',sleep:'🌙',note:'✏️',weight:'⚖️'};
-const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',sleep:'#dfe7f0',note:'#eee3ef',weight:'#dcebdc'};
+const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️'};
+const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc'};
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
 
@@ -306,17 +305,6 @@ function openSheet(kind){
       <button class="save" onclick="saveDiaper()">Spara</button>
       <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
     chipify('dChips');
-  } else if(kind==='sleep'){
-    const running=activeSleep;
-    c.innerHTML=`<h3>Sömn</h3>
-      ${running?`<p style="color:var(--plum-soft);font-size:.9rem">Pågår sedan ${fmtTime(activeSleep.start)} (${fmtClock(Date.now()-activeSleep.start)})</p>
-        <button class="save" onclick="stopSleep()">Avsluta sömn</button>`:
-        `<button class="save" onclick="startSleep()">Starta sömn nu</button>
-         <p style="text-align:center;color:var(--plum-soft);font-size:.8rem;margin:14px 0">— eller logga i efterhand —</p>
-         <div class="row"><div class="field" style="flex:1"><label>Från</label><input type="time" id="sFrom"></div>
-         <div class="field" style="flex:1"><label>Till</label><input type="time" id="sTo"></div></div>
-         <button class="save" onclick="saveSleepManual()">Spara</button>`}
-      <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
   } else if(kind==='feed-manual'){
     c.innerHTML=`<h3>Amning i efterhand</h3>
       <div class="field"><label>Sida</label>
@@ -359,19 +347,6 @@ async function saveDiaper(){
   const note=document.getElementById('noteV').value.trim();
   await put(STORE,{id:uid(),type:'diaper',ts:Date.now(),val:v,note});
   closeSheet();render();toast('Blöja loggad 🌼');
-}
-function startSleep(){activeSleep={id:uid(),start:Date.now()};saveActiveSleep();closeSheet();toast('Sömn startad 🌙');render();}
-async function stopSleep(){
-  const ev={id:activeSleep.id,type:'sleep',ts:activeSleep.start,end:Date.now(),durMs:Date.now()-activeSleep.start};
-  await put(STORE,ev);activeSleep=null;saveActiveSleep();closeSheet();render();toast('Sömn sparad 🌙');
-}
-async function saveSleepManual(){
-  const f=document.getElementById('sFrom').value,t=document.getElementById('sTo').value;
-  if(!f||!t){toast('Fyll i båda tiderna');return;}
-  const today=new Date();const mk=hm=>{const[h,m]=hm.split(':');const d=new Date(today);d.setHours(h,m,0,0);return d.getTime();};
-  let from=mk(f),to=mk(t);if(to<from)to+=864e5;
-  await put(STORE,{id:uid(),type:'sleep',ts:from,end:to,durMs:to-from});
-  closeSheet();render();toast('Sömn sparad 🌙');
 }
 async function saveNote(){
   const note=document.getElementById('noteV').value.trim();
@@ -441,9 +416,6 @@ async function renderBirthStats(){
   sec.innerHTML=html;
 }
 
-// ---------- active sleep persistence ----------
-function saveActiveSleep(){put(META,{k:'activeSleep',v:activeSleep});}
-
 // ---------- render feed + stats ----------
 async function render(){
   const evs=(await allEvents()).sort((a,b)=>b.ts-a.ts);
@@ -468,7 +440,6 @@ function evRow(e){
   let a='',b='';
   if(e.type==='feed'){a='Amning';b=`${e.side||''} · ${fmtClock(e.durMs||0)}`+(e.note?' · '+e.note:'');}
   else if(e.type==='diaper'){a='Blöja';b=e.val+(e.note?' · '+e.note:'');}
-  else if(e.type==='sleep'){a='Sömn';b=`${fmtClock(e.durMs||0)} · till ${fmtTime(e.end)}`+(e.note?' · '+e.note:'');}
   else if(e.type==='note'){a='Anteckning';b=e.note;}
   else if(e.type==='weight'){a='Vikt';b=e.val+' g'+(e.note?' · '+e.note:'');}
   return `<div class="ev"><div class="dot" style="background:${META_BG[e.type]}">${META_ICON[e.type]}</div>
@@ -501,12 +472,9 @@ function renderStats(evs){
   const last=evs.filter(e=>e.ts>=cut);
   const feeds=last.filter(e=>e.type==='feed');
   const diapers=last.filter(e=>e.type==='diaper');
-  const sleepMs=last.filter(e=>e.type==='sleep').reduce((s,e)=>s+(e.durMs||0),0);
-  const sleepH=Math.floor(sleepMs/3600000),sleepM=Math.floor(sleepMs%3600000/60000);
   document.getElementById('statGrid').innerHTML=`
     <div class="stat"><div class="n">${feeds.length}</div><div class="l">Amningar</div></div>
     <div class="stat"><div class="n">${diapers.length}</div><div class="l">Blöjbyten</div></div>
-    <div class="stat"><div class="n">${sleepH}h ${sleepM}m</div><div class="l">Sömn totalt</div></div>
     <div class="stat"><div class="n">${diapers.filter(d=>d.val==='Bajs'||d.val==='Båda').length}</div><div class="l">Bajsblöjor</div></div>`;
   const w=evs.filter(e=>e.type==='weight').sort((a,b)=>b.ts-a.ts);
   if(w.length){
@@ -549,16 +517,14 @@ async function importData(file){
 }
 async function wipe(){
   await new Promise(r=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).clear();t.oncomplete=r;});
-  activeSleep=null;saveActiveSleep();render();toast('Allt raderat');
+  render();toast('Allt raderat');
 }
 async function initName(){const n=await getMeta('name');document.getElementById('babyName').textContent=n||'Bebis';document.getElementById('nameInput').value=n||'';}
 
 // ---------- boot ----------
 (async()=>{
   await openDB();
-  activeSleep=await getMeta('activeSleep');
   await initName();await initBirthData();await render();await renderBirthStats();renderFeedUI();
-  if(activeSleep)toast('Sömn pågår sedan tidigare 🌙');
 })();
 
 // service worker

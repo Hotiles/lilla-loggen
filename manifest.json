@@ -1,7 +1,7 @@
 {
   "name": "Lilla loggen",
   "short_name": "Lilla loggen",
-  "description": "Amning, blöjor, sömn och vikt – allt lokalt på telefonen.",
+  "description": "Amning, blöjor och vikt – allt lokalt på telefonen.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
