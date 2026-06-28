@@ -119,6 +119,8 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .settings-row{display:flex;gap:10px;margin-top:10px}
   .settings-row button{flex:1;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:13px;font-size:.9rem;color:var(--plum);cursor:pointer}
+  .chart-box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 10px;margin-bottom:16px;overflow:hidden}
+  .chart-empty{text-align:center;color:var(--plum-soft);font-size:.82rem;padding:24px 0}
 </style>
 </head>
 <body>
@@ -162,6 +164,10 @@
     <h2 style="color:var(--plum)">Senaste vikt</h2>
     <div class="stat" id="weightStat"><div class="l">Ingen vikt loggad än</div></div>
     <div id="birthStatSection"></div>
+    <h2 style="color:var(--plum);margin-top:20px">Amningar per dag</h2>
+    <div class="chart-box" id="feedChart"><div class="chart-empty">Laddar…</div></div>
+    <h2 style="color:var(--plum)">Viktutveckling</h2>
+    <div class="chart-box" id="weightChart"><div class="chart-empty">Laddar…</div></div>
   </section>
 
   <!-- INSTÄLLNINGAR -->
@@ -440,6 +446,8 @@ async function render(){
     list.innerHTML=html;
   }
   renderStats(evs);
+  const[birthDate,birthWeight]=await Promise.all([getMeta('birthDate'),getMeta('birthWeight')]);
+  renderCharts(evs,birthDate,birthWeight);
 }
 function evRow(e){
   let a='',b='';
@@ -489,6 +497,126 @@ function renderStats(evs){
     if(w.length>1){const diff=latest.val-w[1].val;trend=` · ${diff>=0?'+':''}${diff} g sedan förra`;}
     document.getElementById('weightStat').innerHTML=`<div class="n">${latest.val} g</div><div class="l">${new Date(latest.ts).toLocaleDateString('sv-SE')}${trend}</div>`;
   }
+}
+
+// ---------- grafer ----------
+function svgEl(tag,attrs){
+  const el=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const[k,v]of Object.entries(attrs))el.setAttribute(k,v);
+  return el;
+}
+function niceStep(range,steps){
+  const r=range/steps,e=Math.floor(Math.log10(r||1)),p=Math.pow(10,e);
+  return[1,2,5,10].map(n=>n*p).find(n=>n>=r)||p*10;
+}
+
+function renderCharts(evs,birthDate,birthWeight){
+  renderFeedChart(evs);
+  renderWeightChart(evs,birthDate,birthWeight);
+}
+
+function renderFeedChart(evs){
+  const box=document.getElementById('feedChart');
+  const feeds=evs.filter(e=>e.type==='feed');
+  const DAYS=14;
+  const dayData=[];
+  for(let i=DAYS-1;i>=0;i--){
+    const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);
+    const start=d.getTime(),end=start+864e5;
+    const isToday=i===0;
+    const label=isToday?'idag':d.toLocaleDateString('sv-SE',{weekday:'short'});
+    dayData.push({label,count:feeds.filter(f=>f.ts>=start&&f.ts<end).length,isToday});
+  }
+  const maxC=Math.max(...dayData.map(d=>d.count),1);
+  const W=320,H=150,pL=22,pR=8,pT=10,pB=28;
+  const cW=W-pL-pR,cH=H-pT-pB;
+  const gap=cW/DAYS;const bW=Math.max(Math.floor(gap-3),4);
+  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%'});
+  svg.style.display='block';
+  // y-rutnät
+  const ySteps=Math.min(maxC,6);
+  for(let s=0;s<=ySteps;s++){
+    const yv=Math.round(s/ySteps*maxC);
+    const y=pT+cH-(yv/maxC)*cH;
+    svg.appendChild(svgEl('line',{x1:pL,y1:y,x2:W-pR,y2:y,stroke:'#ecdcc9','stroke-width':'1'}));
+    if(s>0){const t=svgEl('text',{x:pL-3,y:y+4,'text-anchor':'end','font-size':'10',fill:'#8a7480','font-family':'system-ui'});t.textContent=yv;svg.appendChild(t);}
+  }
+  // staplar
+  dayData.forEach((d,i)=>{
+    const x=pL+i*gap+(gap-bW)/2;
+    if(d.count>0){
+      const bH=(d.count/maxC)*cH,y=pT+cH-bH;
+      svg.appendChild(svgEl('rect',{x,y,width:bW,height:bH,fill:d.isToday?'#c9776a':'#e8a598',rx:'3'}));
+      const t=svgEl('text',{x:x+bW/2,y:y-3,'text-anchor':'middle','font-size':'10',fill:'#5a4a52','font-weight':'600','font-family':'system-ui'});
+      t.textContent=d.count;svg.appendChild(t);
+    } else {
+      svg.appendChild(svgEl('rect',{x,y:pT+cH-2,width:bW,height:'2',fill:'#ecdcc9',rx:'1'}));
+    }
+    // x-etiketter varannan dag + idag
+    if(i%2===1||d.isToday){
+      const t=svgEl('text',{x:x+bW/2,y:H-5,'text-anchor':'middle','font-size':'9',fill:d.isToday?'#c9776a':'#8a7480','font-family':'system-ui'});
+      t.textContent=d.label;svg.appendChild(t);
+    }
+  });
+  box.innerHTML='';box.appendChild(svg);
+}
+
+function renderWeightChart(evs,birthDate,birthWeight){
+  const box=document.getElementById('weightChart');
+  let pts=evs.filter(e=>e.type==='weight').sort((a,b)=>a.ts-b.ts).map(e=>({ts:e.ts,val:e.val}));
+  if(birthDate&&birthWeight){
+    const[y,m,d]=birthDate.split('-').map(Number);
+    pts=[{ts:new Date(y,m-1,d,12).getTime(),val:Number(birthWeight),birth:true},...pts].sort((a,b)=>a.ts-b.ts);
+  }
+  if(pts.length<2){
+    box.innerHTML=`<div class="chart-empty">${pts.length===0?'Logga vikter för att se grafen':'Logga fler vikter för att se trenden'}</div>`;
+    return;
+  }
+  const W=320,H=170,pL=50,pR=14,pT=16,pB=28;
+  const cW=W-pL-pR,cH=H-pT-pB;
+  const tMin=pts[0].ts,tMax=pts[pts.length-1].ts;
+  const vMin=Math.min(...pts.map(p=>p.val));
+  const vMax=Math.max(...pts.map(p=>p.val));
+  const range=vMax-vMin||200;
+  const yMin=Math.floor((vMin-range*.15)/100)*100;
+  const yMax=Math.ceil((vMax+range*.15)/100)*100;
+  const xS=ts=>pL+(tMax===tMin?cW/2:(ts-tMin)/(tMax-tMin)*cW);
+  const yS=v=>pT+cH-(v-yMin)/(yMax-yMin)*cH;
+  const svg=svgEl('svg',{viewBox:`0 0 ${W} ${H}`,width:'100%'});
+  svg.style.display='block';
+  // y-rutnät
+  const step=niceStep(yMax-yMin,4);
+  for(let v=Math.ceil(yMin/step)*step;v<=yMax;v+=step){
+    const y=yS(v);
+    svg.appendChild(svgEl('line',{x1:pL,y1:y,x2:W-pR,y2:y,stroke:'#ecdcc9','stroke-width':'1'}));
+    const t=svgEl('text',{x:pL-5,y:y+4,'text-anchor':'end','font-size':'10',fill:'#8a7480','font-family':'system-ui'});
+    t.textContent=v>=1000?(v/1000).toFixed(v%1000===0?1:2).replace('.',',')+' kg':v+' g';
+    svg.appendChild(t);
+  }
+  // linje
+  const pd=pts.map((p,i)=>`${i===0?'M':'L'}${xS(p.ts).toFixed(1)},${yS(p.val).toFixed(1)}`).join(' ');
+  svg.appendChild(svgEl('path',{d:pd,fill:'none',stroke:'#9bbf9a','stroke-width':'2.5','stroke-linejoin':'round','stroke-linecap':'round'}));
+  // punkter
+  for(const p of pts){
+    const cx=xS(p.ts).toFixed(1),cy=yS(p.val).toFixed(1);
+    svg.appendChild(svgEl('circle',{cx,cy,r:'4.5',fill:p.birth?'#e8a598':'#9bbf9a',stroke:'#fff','stroke-width':'2'}));
+  }
+  // etikett på första och sista punkten
+  const addLabel=(p,anchor)=>{
+    const cx=xS(p.ts),cy=yS(p.val);
+    const t=svgEl('text',{x:cx+(anchor==='start'?7:-7),y:cy+4,'text-anchor':anchor,'font-size':'11',fill:'#5a4a52','font-weight':'600','font-family':'system-ui'});
+    t.textContent=(p.val/1000).toFixed(2).replace('.',',')+' kg';
+    svg.appendChild(t);
+  };
+  addLabel(pts[0],'start');
+  if(pts.length>1)addLabel(pts[pts.length-1],'end');
+  // x-datum
+  const fmtD=ts=>new Date(ts).toLocaleDateString('sv-SE',{day:'numeric',month:'short'});
+  const tx1=svgEl('text',{x:xS(pts[0].ts),y:H-5,'text-anchor':'start','font-size':'10',fill:'#8a7480','font-family':'system-ui'});
+  tx1.textContent=fmtD(pts[0].ts);svg.appendChild(tx1);
+  const tx2=svgEl('text',{x:xS(pts[pts.length-1].ts),y:H-5,'text-anchor':'end','font-size':'10',fill:'#8a7480','font-family':'system-ui'});
+  tx2.textContent=fmtD(pts[pts.length-1].ts);svg.appendChild(tx2);
+  box.innerHTML='';box.appendChild(svg);
 }
 
 // ---------- nav ----------
