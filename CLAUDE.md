@@ -33,6 +33,15 @@ det viktigaste är att kunna logga en amning med ett enda tryck, även mitt i na
 - Driftas som **publik GitHub Pages** (gratis). HTTPS krävs för att PWA + IndexedDB ska funka.
 - Koden är publik, men **datan är det inte** – den lämnar aldrig telefonen.
 
+## Tester
+
+Testerna körs med **Playwright** mot Chromium i headless-läge (`npm test`).
+
+- `tests/feed.test.js` – amnings-timern: start, stopp, sidbyten, manuell loggning, edge cases
+- `tests/logging.test.js` – blöja, anteckning, vikt, radering, inline-redigering
+- `tests/stats.test.js` – statistik-vyn
+- `tests/settings.test.js` – inställningar och export/import-flödet
+
 ## Innan du föreslår en PR
 - Kör `npm test` och kontrollera att alla tester är gröna. Föreslå inte en PR om något test
   misslyckas.
