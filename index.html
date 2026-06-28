@@ -245,6 +245,7 @@ const fmtClock=ms=>{const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000);ret
 const fmtTime=ts=>new Date(ts).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
 const fmtDayKey=ts=>new Date(ts).toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
 const ago=ts=>{const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'nyss';if(m<60)return m+' min sedan';const h=Math.floor(m/60);return h+' h '+(m%60)+' min sedan';};
+const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️'};
 const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc'};
 
@@ -265,7 +266,8 @@ function tickFeed(){if(activeFeed)document.getElementById('timer').textContent=f
 async function stopFeed(){
   if(!activeFeed)return;
   clearInterval(tickInt);
-  const ev={...activeFeed,type:'feed',ts:activeFeed.start,end:Date.now(),durMs:Date.now()-activeFeed.start};
+  const now=Date.now();
+  const ev={...activeFeed,type:'feed',ts:activeFeed.start,end:now,durMs:now-activeFeed.start};
   delete ev.start;
   await put(STORE,ev);
   activeFeed=null;
@@ -361,8 +363,11 @@ async function saveManualFeed(){
   const note=document.getElementById('noteV').value.trim();
   const today=new Date();
   const mk=hm=>{const[h,m]=hm.split(':');const d=new Date(today);d.setHours(h,m,0,0);return d.getTime();};
-  let from=mk(f),to=mk(t);if(to<from)to+=864e5;
-  await put(STORE,{id:uid(),type:'feed',ts:from,end:to,durMs:to-from,side,note});
+  let from=mk(f),to=mk(t);
+  if(to<from)from-=864e5; // startade igår
+  const durMs=to-from;
+  if(durMs<60000){toast('Starttid och sluttid kan inte vara samma');return;}
+  await put(STORE,{id:uid(),type:'feed',ts:from,end:to,durMs,side,note});
   closeSheet();render();toast('Amning sparad 🤱');
 }
 async function saveWeight(){
@@ -379,8 +384,8 @@ async function saveBirthData(){
   const bw=document.getElementById('birthWeightInput').value;
   const bl=document.getElementById('birthLengthInput').value;
   await put(META,{k:'birthDate',v:bd||''});
-  if(bw)await put(META,{k:'birthWeight',v:parseInt(bw,10)});
-  if(bl)await put(META,{k:'birthLength',v:parseFloat(bl)});
+  await put(META,{k:'birthWeight',v:bw?parseInt(bw,10):null});
+  await put(META,{k:'birthLength',v:bl?parseFloat(bl):null});
   toast('Sparat');
   await renderBirthStats();
 }
@@ -438,10 +443,10 @@ async function render(){
 }
 function evRow(e){
   let a='',b='';
-  if(e.type==='feed'){a='Amning';b=`${e.side||''} · ${fmtClock(e.durMs||0)}`+(e.note?' · '+e.note:'');}
-  else if(e.type==='diaper'){a='Blöja';b=e.val+(e.note?' · '+e.note:'');}
-  else if(e.type==='note'){a='Anteckning';b=e.note;}
-  else if(e.type==='weight'){a='Vikt';b=e.val+' g'+(e.note?' · '+e.note:'');}
+  if(e.type==='feed'){a='Amning';b=`${esc(e.side)||''} · ${fmtClock(e.durMs||0)}`+(e.note?' · '+esc(e.note):'');}
+  else if(e.type==='diaper'){a='Blöja';b=esc(e.val)+(e.note?' · '+esc(e.note):'');}
+  else if(e.type==='note'){a='Anteckning';b=esc(e.note);}
+  else if(e.type==='weight'){a='Vikt';b=esc(String(e.val))+' g'+(e.note?' · '+esc(e.note):'');}
   return `<div class="ev"><div class="dot" style="background:${META_BG[e.type]}">${META_ICON[e.type]}</div>
     <div class="body"><div class="a">${a}</div><div class="b">${b||''}</div></div>
     <div class="time">${fmtTime(e.ts)}</div>
@@ -472,8 +477,10 @@ function renderStats(evs){
   const last=evs.filter(e=>e.ts>=cut);
   const feeds=last.filter(e=>e.type==='feed');
   const diapers=last.filter(e=>e.type==='diaper');
+  const avgMin=feeds.length?Math.round(feeds.reduce((s,e)=>s+(e.durMs||0),0)/feeds.length/60000):0;
   document.getElementById('statGrid').innerHTML=`
     <div class="stat"><div class="n">${feeds.length}</div><div class="l">Amningar</div></div>
+    <div class="stat"><div class="n">${avgMin} min</div><div class="l">Snitt per amning</div></div>
     <div class="stat"><div class="n">${diapers.length}</div><div class="l">Blöjbyten</div></div>
     <div class="stat"><div class="n">${diapers.filter(d=>d.val==='Bajs'||d.val==='Båda').length}</div><div class="l">Bajsblöjor</div></div>`;
   const w=evs.filter(e=>e.type==='weight').sort((a,b)=>b.ts-a.ts);
@@ -516,8 +523,16 @@ async function importData(file){
   }catch(e){toast('Kunde inte läsa filen');}
 }
 async function wipe(){
-  await new Promise(r=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).clear();t.oncomplete=r;});
-  render();toast('Allt raderat');
+  await Promise.all([
+    new Promise(r=>{const t=db.transaction(STORE,'readwrite');t.objectStore(STORE).clear();t.oncomplete=r;}),
+    new Promise(r=>{const t=db.transaction(META,'readwrite');t.objectStore(META).clear();t.oncomplete=r;})
+  ]);
+  document.getElementById('babyName').textContent='Bebis';
+  document.getElementById('nameInput').value='';
+  document.getElementById('birthDateInput').value='';
+  document.getElementById('birthWeightInput').value='';
+  document.getElementById('birthLengthInput').value='';
+  render();renderBirthStats();toast('Allt raderat');
 }
 async function initName(){const n=await getMeta('name');document.getElementById('babyName').textContent=n||'Bebis';document.getElementById('nameInput').value=n||'';}
 
