@@ -33,6 +33,10 @@ det viktigaste är att kunna logga en amning med ett enda tryck, även mitt i na
 - Driftas som **publik GitHub Pages** (gratis). HTTPS krävs för att PWA + IndexedDB ska funka.
 - Koden är publik, men **datan är det inte** – den lämnar aldrig telefonen.
 
+## Innan du föreslår en PR
+- Kör `npm test` och kontrollera att alla tester är gröna. Föreslå inte en PR om något test
+  misslyckas.
+
 ## Bra att veta vid ändringar
 - När `sw.js` cachelista eller någon asset ändras: **bumpa `CACHE`-namnet** (t.ex. `-v2`),
   annars serveras gammal cache.
