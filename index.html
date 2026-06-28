@@ -162,6 +162,7 @@
     <div class="stat-grid" id="statGrid"></div>
     <h2 style="color:var(--plum)">Senaste vikt</h2>
     <div class="stat" id="weightStat"><div class="l">Ingen vikt loggad än</div></div>
+    <div id="birthStatSection"></div>
   </section>
 
   <!-- INSTÄLLNINGAR -->
@@ -170,6 +171,23 @@
     <div class="field">
       <label>Bebisens namn</label>
       <input id="nameInput" placeholder="t.ex. Alma" onchange="saveName(this.value)">
+    </div>
+    <div style="margin-top:20px;padding-top:18px;border-top:1px solid var(--line)">
+      <h3 style="color:var(--plum);margin:0 0 14px;font-size:1rem">Födelsedata</h3>
+      <div class="field">
+        <label>Födelsedatum</label>
+        <input type="date" id="birthDateInput" onchange="saveBirthData()">
+      </div>
+      <div class="row">
+        <div class="field" style="flex:1">
+          <label>Vikt vid födseln (g)</label>
+          <input type="number" id="birthWeightInput" inputmode="numeric" placeholder="t.ex. 3250" onchange="saveBirthData()">
+        </div>
+        <div class="field" style="flex:1">
+          <label>Längd vid födseln (cm)</label>
+          <input type="number" id="birthLengthInput" inputmode="decimal" placeholder="t.ex. 50" onchange="saveBirthData()">
+        </div>
+      </div>
     </div>
     <p style="font-size:.8rem;color:var(--plum-soft);line-height:1.5">All data sparas bara på den här telefonen. Inget skickas någonstans. Ta backup då och då med exporten nedan.</p>
     <div class="settings-row">
@@ -377,6 +395,49 @@ async function saveWeight(){
   closeSheet();render();toast('Vikt sparad ⚖️');
 }
 
+// ---------- födelsedata ----------
+async function saveBirthData(){
+  const bd=document.getElementById('birthDateInput').value;
+  const bw=document.getElementById('birthWeightInput').value;
+  const bl=document.getElementById('birthLengthInput').value;
+  await put(META,{k:'birthDate',v:bd||''});
+  if(bw)await put(META,{k:'birthWeight',v:parseInt(bw,10)});
+  if(bl)await put(META,{k:'birthLength',v:parseFloat(bl)});
+  toast('Sparat');
+  await renderBirthStats();
+}
+async function initBirthData(){
+  const bd=await getMeta('birthDate');
+  const bw=await getMeta('birthWeight');
+  const bl=await getMeta('birthLength');
+  if(bd)document.getElementById('birthDateInput').value=bd;
+  if(bw)document.getElementById('birthWeightInput').value=bw;
+  if(bl)document.getElementById('birthLengthInput').value=bl;
+}
+async function renderBirthStats(){
+  const bd=await getMeta('birthDate');
+  const bw=await getMeta('birthWeight');
+  const bl=await getMeta('birthLength');
+  const sec=document.getElementById('birthStatSection');
+  if(!bd&&!bw&&!bl){sec.innerHTML='';return;}
+  let html='<h2 style="color:var(--plum)">Grunddata</h2><div class="stat-grid">';
+  if(bd){
+    const[y,m,d]=bd.split('-').map(Number);
+    const born=new Date(y,m-1,d,0,0,0);
+    const now=new Date();now.setHours(0,0,0,0);
+    const days=Math.max(0,Math.round((now-born)/864e5));
+    const weeks=Math.floor(days/7),rem=days%7;
+    html+=`<div class="stat" style="grid-column:span 2">
+      <div class="n" style="font-size:1.5rem">${weeks} v ${rem} d</div>
+      <div class="l">Ålder · född ${new Date(y,m-1,d).toLocaleDateString('sv-SE',{day:'numeric',month:'long',year:'numeric'})}</div>
+    </div>`;
+  }
+  if(bw)html+=`<div class="stat"><div class="n">${bw} g</div><div class="l">Vikt vid födseln</div></div>`;
+  if(bl)html+=`<div class="stat"><div class="n">${bl} cm</div><div class="l">Längd vid födseln</div></div>`;
+  html+='</div>';
+  sec.innerHTML=html;
+}
+
 // ---------- active sleep persistence ----------
 function saveActiveSleep(){put(META,{k:'activeSleep',v:activeSleep});}
 
@@ -464,7 +525,10 @@ function show(v){
 async function saveName(v){await put(META,{k:'name',v});document.getElementById('babyName').textContent=v||'Bebis';}
 async function exportData(){
   const evs=await allEvents();const name=await getMeta('name');
-  const blob=new Blob([JSON.stringify({app:'lillaloggen',exported:new Date().toISOString(),name,events:evs},null,2)],{type:'application/json'});
+  const birthDate=await getMeta('birthDate');
+  const birthWeight=await getMeta('birthWeight');
+  const birthLength=await getMeta('birthLength');
+  const blob=new Blob([JSON.stringify({app:'lillaloggen',exported:new Date().toISOString(),name,birthDate,birthWeight,birthLength,events:evs},null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='lilla-loggen-'+new Date().toISOString().slice(0,10)+'.json';a.click();
   toast('Backup exporterad');
@@ -474,7 +538,10 @@ async function importData(file){
   try{const d=JSON.parse(await file.text());
     if(d.events)for(const e of d.events)await put(STORE,e);
     if(d.name)await saveName(d.name);
-    render();initName();toast('Data importerad');
+    if(d.birthDate!=null)await put(META,{k:'birthDate',v:d.birthDate});
+    if(d.birthWeight)await put(META,{k:'birthWeight',v:d.birthWeight});
+    if(d.birthLength)await put(META,{k:'birthLength',v:d.birthLength});
+    render();initName();await initBirthData();await renderBirthStats();toast('Data importerad');
   }catch(e){toast('Kunde inte läsa filen');}
 }
 async function wipe(){
@@ -487,7 +554,7 @@ async function initName(){const n=await getMeta('name');document.getElementById(
 (async()=>{
   await openDB();
   activeSleep=await getMeta('activeSleep');
-  await initName();await render();renderFeedUI();
+  await initName();await initBirthData();await render();await renderBirthStats();renderFeedUI();
   if(activeSleep)toast('Sömn pågår sedan tidigare 🌙');
 })();
 
