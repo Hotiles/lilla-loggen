@@ -139,3 +139,68 @@ test('manual feed: cancel closes sheet without saving', async ({ page }) => {
   await expect(page.locator('#sheet')).not.toHaveClass(/show/);
   await expect(page.locator('#feedList .ev')).toHaveCount(0);
 });
+
+test('adjust row is hidden when idle and visible while running', async ({ page }) => {
+  await expect(page.locator('#adjustRow')).toBeHidden();
+
+  await page.locator('#btnL').click();
+  await expect(page.locator('#adjustRow')).toBeVisible();
+
+  await page.locator('#stopBtn').click();
+  await expect(page.locator('#adjustRow')).toBeHidden();
+});
+
+test('+30 s increases elapsed time, −30 s decreases it', async ({ page }) => {
+  await page.locator('#btnL').click();
+  await page.waitForFunction(() => document.getElementById('timer').textContent !== '––:––');
+
+  // freeze start so the comparison is deterministic, then add 60 s
+  await page.evaluate(() => { activeFeed.start = Date.now(); tickFeed(); });
+  await page.locator('.adj-btn:has-text("+30 s")').click();
+  await page.locator('.adj-btn:has-text("+30 s")').click();
+  await expect(page.locator('#timer')).toHaveText('01:00');
+
+  await page.locator('.adj-btn:has-text("−30 s")').click();
+  await expect(page.locator('#timer')).toHaveText('00:30');
+});
+
+test('−30 s never drives elapsed time below zero', async ({ page }) => {
+  await page.locator('#btnL').click();
+  await page.evaluate(() => { activeFeed.start = Date.now(); tickFeed(); });
+
+  await page.locator('.adj-btn:has-text("−30 s")').click();
+  await expect(page.locator('#timer')).toHaveText('00:00');
+});
+
+test('editing a logged feed updates its duration', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fFrom', '10:00');
+  await page.fill('#fTo', '10:10');
+  await page.locator('.save').click();
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('10:00');
+
+  await page.locator('#feedList .ev').first().locator('button[title="Ändra"]').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#efTo', '10:25');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Amning ändrad');
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('25:00');
+});
+
+test('editing a feed: under one minute is rejected', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fFrom', '10:00');
+  await page.fill('#fTo', '10:10');
+  await page.locator('.save').click();
+
+  await page.locator('#feedList .ev').first().locator('button[title="Ändra"]').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#efTo', '10:00');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Starttid och sluttid kan inte vara samma');
+  await expect(page.locator('#sheet')).toHaveClass(/show/);
+});
