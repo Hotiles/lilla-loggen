@@ -195,6 +195,9 @@
       <button onclick="document.getElementById('importFile').click()">⬆️ Importera</button>
     </div>
     <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(this.files[0])">
+    <div class="settings-row" style="margin-top:10px">
+      <button onclick="checkUpdate()">🔄 Kontrollera uppdatering</button>
+    </div>
     <div class="settings-row" style="margin-top:18px">
       <button style="color:var(--rose-deep)" onclick="if(confirm('Radera ALLT? Detta går inte att ångra.'))wipe()">Radera all data</button>
     </div>
@@ -559,7 +562,26 @@ async function initName(){const n=await getMeta('name');document.getElementById(
 })();
 
 // service worker
-if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+let swReg=null;
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js')
+    .then(r=>{swReg=r;})
+    .catch(()=>{});
+}
+async function checkUpdate(){
+  if(!swReg){toast('Service worker ej tillgänglig');return;}
+  toast('Söker uppdatering…');
+  try{await swReg.update();}catch(e){}
+  const pending=swReg.installing||swReg.waiting;
+  if(pending){waitForSWActivation(pending);return;}
+  swReg.addEventListener('updatefound',()=>waitForSWActivation(swReg.installing),{once:true});
+  setTimeout(()=>{if(!swReg.installing&&!swReg.waiting)toast('Appen är redan aktuell ✓');},2500);
+}
+function waitForSWActivation(sw){
+  if(!sw)return;
+  toast('Uppdatering hittad – installerar…');
+  sw.addEventListener('statechange',()=>{if(sw.state==='activated')window.location.reload();});
+}
 </script>
 </body>
 </html>
