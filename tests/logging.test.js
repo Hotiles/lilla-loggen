@@ -101,7 +101,7 @@ test('weight: value in grams is saved and shown in feed', async ({ page }) => {
 
 // ── Event management ────────────────────────────────────────────────────────
 
-test('event can be deleted', async ({ page }) => {
+test('event can be deleted via undo-toast', async ({ page }) => {
   await page.locator('.q').filter({ hasText: 'Blöja' }).click();
   await page.waitForSelector('#sheet.show');
   await page.locator('.save').click();
@@ -109,10 +109,25 @@ test('event can be deleted', async ({ page }) => {
 
   await expect(page.locator('#feedList .ev')).toHaveCount(1);
 
-  page.once('dialog', (dialog) => dialog.accept());
   await page.locator('#feedList .ev').first().locator('.del').last().click();
 
   await expect(page.locator('#feedList .ev')).toHaveCount(0);
+  await expect(page.locator('#undoToast')).toHaveClass(/show/);
+});
+
+test('deleting an event can be undone', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Blöja' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await page.locator('#feedList .ev').first().locator('.del').last().click();
+  await expect(page.locator('#feedList .ev')).toHaveCount(0);
+
+  await page.locator('#undoBtn').click();
+
+  await expect(page.locator('#feedList .ev')).toHaveCount(1);
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Kiss');
 });
 
 test('note can be edited on an existing event', async ({ page }) => {
