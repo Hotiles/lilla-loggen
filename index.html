@@ -1008,10 +1008,19 @@ async function checkUpdate(){
   swReg.addEventListener('updatefound',()=>waitForSWActivation(swReg.installing),{once:true});
   setTimeout(()=>{if(!swReg.installing&&!swReg.waiting)toast('Appen är redan aktuell ✓');},2500);
 }
-function waitForSWActivation(sw){
+async function waitForSWActivation(sw){
   if(!sw)return;
-  toast('Uppdatering hittad – installerar…');
-  sw.addEventListener('statechange',()=>{if(sw.state==='activated')window.location.reload();});
+  toast('Uppdatering hittad');
+  // Påminn om att säkra datan innan uppdateringen tillämpas (appen laddas om).
+  // Datan ligger bara på den här telefonen – en export är billig försäkring
+  // ifall den nya versionen skulle bete sig oväntat.
+  if(confirm('En uppdatering är klar att installeras.\n\nVill du exportera en säkerhetskopia först? (Rekommenderas – din data finns bara på den här telefonen.)')){
+    try{await exportData();}catch(e){/* avbryt inte uppdateringen om exporten strular */}
+  }
+  toast('Installerar uppdatering…');
+  const reload=()=>window.location.reload();
+  if(sw.state==='activated'){reload();return;}
+  sw.addEventListener('statechange',()=>{if(sw.state==='activated')reload();});
 }
 </script>
 </body>
