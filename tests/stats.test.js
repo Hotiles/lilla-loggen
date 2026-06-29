@@ -194,6 +194,48 @@ test('weight shows gain rate and status against birth weight', async ({ page }) 
   await expect(page.locator('#weightStat')).toContainText('Över födelsevikten (+500 g)');
 });
 
+// ── Range selector drives the summary ─────────────────────────────────────────
+
+test('range buttons update the summary heading', async ({ page }) => {
+  await page.locator('#nav-stats').click();
+
+  await expect(page.locator('#statHeading')).toHaveText('Senaste 7 dagarna');
+  await page.locator('#chartRangeRow [data-r="dag"]').click();
+  await expect(page.locator('#statHeading')).toHaveText('Senaste 24h');
+  await page.locator('#chartRangeRow [data-r="manad"]').click();
+  await expect(page.locator('#statHeading')).toHaveText('Senaste 30 dagarna');
+});
+
+test('summary counts follow the selected range window', async ({ page }) => {
+  // en amning 3 dygn tillbaka: inom veckan men utanför senaste 24h
+  await page.evaluate(async () => {
+    const ts = Date.now() - 3 * 864e5;
+    await put(STORE, { id: 'old1', type: 'feed', ts, end: ts + 6e5, durMs: 6e5, side: 'Vänster' });
+    await render();
+  });
+  await page.locator('#nav-stats').click();
+
+  const amningar = page.locator('#statGrid .stat').filter({ hasText: 'Amningar' }).locator('.n');
+  await expect(amningar).toHaveText('1'); // standard = vecka
+  await page.locator('#chartRangeRow [data-r="dag"]').click();
+  await expect(amningar).toHaveText('0'); // senaste 24h utesluter den
+});
+
+// ── Day/night pattern ─────────────────────────────────────────────────────────
+
+test('dygnsrytm shows the night share of feeds', async ({ page }) => {
+  await page.evaluate(async () => {
+    const mk = (h) => { const d = new Date(); d.setHours(h, 0, 0, 0); return d.getTime(); };
+    await put(STORE, { id: 'n1', type: 'feed', ts: mk(2), end: mk(2) + 6e5, durMs: 6e5, side: 'Vänster' }); // natt
+    await put(STORE, { id: 'd1', type: 'feed', ts: mk(14), end: mk(14) + 6e5, durMs: 6e5, side: 'Höger' }); // dag
+    await render();
+  });
+  await page.locator('#nav-stats').click();
+
+  await expect(page.locator('#nightShare')).toContainText('1 av 2 amningar på natten');
+  await expect(page.locator('#nightShare')).toContainText('50%');
+});
+
 // ── Birth data ───────────────────────────────────────────────────────────────
 
 test('birth date shows age in weeks and days', async ({ page }) => {

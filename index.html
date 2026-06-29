@@ -168,6 +168,7 @@
   .backup-status .sub{opacity:.75;margin-top:4px}
   .chart-box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 10px;margin-bottom:16px;overflow:hidden}
   .chart-empty{text-align:center;color:var(--plum-soft);font-size:.82rem;padding:24px 0}
+  .chart-cap{font-size:.78rem;color:var(--plum-soft);margin:-4px 2px 8px;line-height:1.4;font-variant-numeric:tabular-nums}
   .range-row{display:flex;gap:6px;margin-bottom:14px}
   .range-btn{flex:1;border:1px solid var(--line);background:var(--dawn-1);border-radius:10px;padding:8px 4px;font-size:.82rem;color:var(--plum-soft);cursor:pointer;font-family:inherit;transition:background .15s,color .15s}
   .range-btn.active{background:var(--rose);color:#fff;border-color:var(--rose)}
@@ -213,7 +214,13 @@
 
   <!-- STATISTIK -->
   <section class="view" id="view-stats">
-    <h2 style="color:var(--plum)">Senaste 24h</h2>
+    <div class="range-row" id="chartRangeRow">
+      <button class="range-btn" data-r="dag" onclick="setChartRange('dag')">Dag</button>
+      <button class="range-btn active" data-r="vecka" onclick="setChartRange('vecka')">Vecka</button>
+      <button class="range-btn" data-r="manad" onclick="setChartRange('manad')">Månad</button>
+      <button class="range-btn" data-r="ar" onclick="setChartRange('ar')">År</button>
+    </div>
+    <h2 style="color:var(--plum)" id="statHeading">Senaste 7 dagarna</h2>
     <div class="stat-grid" id="statGrid"></div>
     <div id="diaperBreakdown"></div>
     <h2 style="color:var(--plum)">Amningsrytm</h2>
@@ -223,14 +230,11 @@
     <div class="stat" id="weightStat"><div class="l">Ingen vikt loggad än</div></div>
     <div id="birthStatSection"></div>
     <div style="margin-top:20px">
-      <div class="range-row" id="chartRangeRow">
-        <button class="range-btn" data-r="dag" onclick="setChartRange('dag')">Dag</button>
-        <button class="range-btn active" data-r="vecka" onclick="setChartRange('vecka')">Vecka</button>
-        <button class="range-btn" data-r="manad" onclick="setChartRange('manad')">Månad</button>
-        <button class="range-btn" data-r="ar" onclick="setChartRange('ar')">År</button>
-      </div>
       <h2 style="color:var(--plum)">Amningar</h2>
       <div class="chart-box" id="feedChart"><div class="chart-empty">Laddar…</div></div>
+      <h2 style="color:var(--plum)">Dygnsrytm</h2>
+      <div class="chart-cap" id="nightShare"></div>
+      <div class="chart-box" id="hourChart"><div class="chart-empty">Laddar…</div></div>
       <h2 style="color:var(--plum)">Blöjor</h2>
       <div class="chart-box" id="diaperChart"><div class="chart-empty">Laddar…</div></div>
       <h2 style="color:var(--plum)">Viktutveckling</h2>
@@ -702,7 +706,8 @@ function fmtHm(ms){
   return h?`${h} h ${m} min`:`${m} min`;
 }
 function renderStats(evs,birthDate,birthWeight){
-  const cut=Date.now()-864e5;
+  document.getElementById('statHeading').textContent=rangeHeading();
+  const cut=rangeCutoff();
   const last=evs.filter(e=>e.ts>=cut);
   const feeds=last.filter(e=>e.type==='feed');
   const diapers=last.filter(e=>e.type==='diaper');
@@ -728,13 +733,16 @@ function renderDiaperBreakdown(diapers){
     <span>💧 ${wet} våta</span><span>💩 ${poop} bajs</span><span>⬜ ${dry} torra</span>
   </div>`;
 }
-// amningsrytm (24h): snitt mellan amningar, längsta paus, total tid vid bröstet
+// amningsrytm: snitt mellan amningar, längsta paus, tid vid bröstet per dygn
 function renderRhythm(feeds){
   const el=document.getElementById('rhythmSection');
   const sorted=[...feeds].sort((a,b)=>a.ts-b.ts);
   const totMs=feeds.reduce((s,e)=>s+(e.durMs||0),0);
+  // tid vid bröstet normaliseras per dygn så att intervallen går att jämföra
+  const spanDays=feeds.length?Math.max(1,(Date.now()-sorted[0].ts)/864e5):1;
+  const perDayMs=totMs/spanDays;
   if(sorted.length<2){
-    el.innerHTML=`<div class="stat"><div class="l">${feeds.length?'Tid vid bröstet (24h): '+fmtHm(totMs)+' · logga fler amningar för rytm':'Logga fler amningar för att se rytmen'}</div></div>`;
+    el.innerHTML=`<div class="stat"><div class="l">${feeds.length?'Tid vid bröstet: '+fmtHm(totMs)+' · logga fler amningar för rytm':'Logga fler amningar för att se rytmen'}</div></div>`;
     return;
   }
   let sumGap=0,maxGap=0;
@@ -746,10 +754,10 @@ function renderRhythm(feeds){
   el.innerHTML=`<div class="stat-grid">
     <div class="stat"><div class="n" style="font-size:1.4rem">${fmtHm(avgGap)}</div><div class="l">Snitt mellan amningar</div></div>
     <div class="stat"><div class="n" style="font-size:1.4rem">${fmtHm(maxGap)}</div><div class="l">Längsta paus</div></div>
-    <div class="stat" style="grid-column:span 2"><div class="n" style="font-size:1.4rem">${fmtHm(totMs)}</div><div class="l">Tid vid bröstet (24h)</div></div>
+    <div class="stat" style="grid-column:span 2"><div class="n" style="font-size:1.4rem">${fmtHm(perDayMs)}</div><div class="l">Tid vid bröstet / dygn</div></div>
   </div>`;
 }
-// sidobalans (24h): vänster vs höger bröst, ignorerar "vet ej"
+// sidobalans: vänster vs höger bröst, ignorerar "vet ej"
 function renderSideBalance(feeds){
   const el=document.getElementById('sideBalance');
   const left=feeds.filter(e=>e.side==='Vänster').length;
@@ -757,7 +765,7 @@ function renderSideBalance(feeds){
   if(left+right===0){el.innerHTML='';return;}
   const tot=left+right,lPct=left/tot*100;
   el.innerHTML=`<div class="sidebar-wrap">
-    <div class="l">Sidobalans (24h)</div>
+    <div class="l">Sidobalans · ${rangeLabel()}</div>
     <div class="sidebar-bar"><i class="left" style="width:${lPct}%"></i><i class="right" style="width:${100-lPct}%"></i></div>
     <div class="sidebar-legend"><span><b>Vänster</b> ${left}</span><span>${right} <b>Höger</b></span></div>
   </div>`;
@@ -811,9 +819,22 @@ function chartColors(){
 let chartRange='vecka';
 let _cEvs=[],_cBD=null,_cBW=null;
 
+// valt intervall som ms-gräns, kort etikett och rubrik – delas av summering och grafer
+function rangeCutoff(){
+  const now=Date.now();
+  return chartRange==='dag'?now-864e5:chartRange==='vecka'?now-7*864e5:chartRange==='manad'?now-30*864e5:now-365*864e5;
+}
+function rangeLabel(){
+  return chartRange==='dag'?'24h':chartRange==='vecka'?'7 dagar':chartRange==='manad'?'30 dagar':'12 mån';
+}
+function rangeHeading(){
+  return chartRange==='dag'?'Senaste 24h':chartRange==='vecka'?'Senaste 7 dagarna':chartRange==='manad'?'Senaste 30 dagarna':'Senaste året';
+}
+
 function setChartRange(r){
   chartRange=r;
   document.querySelectorAll('#chartRangeRow .range-btn').forEach(b=>b.classList.toggle('active',b.dataset.r===r));
+  renderStats(_cEvs,_cBD,_cBW);
   renderCharts(_cEvs,_cBD,_cBW);
 }
 
@@ -849,7 +870,7 @@ function getBuckets(evs,type){
   });
 }
 
-function renderBarChart(boxId,buckets,color,colorCurrent){
+function renderBarChart(boxId,buckets,color,colorCurrent,colorAlt){
   const box=document.getElementById(boxId);
   const C=chartColors();
   const maxC=Math.max(...buckets.map(b=>b.count),1);
@@ -869,7 +890,7 @@ function renderBarChart(boxId,buckets,color,colorCurrent){
     const x=pL+i*gap+(gap-bW)/2;
     if(b.count>0){
       const bH=(b.count/maxC)*cH,y=pT+cH-bH;
-      svg.appendChild(svgEl('rect',{x,y,width:bW,height:bH,fill:b.current?colorCurrent:color,rx:'3'}));
+      svg.appendChild(svgEl('rect',{x,y,width:bW,height:bH,fill:b.current?colorCurrent:(b.alt&&colorAlt?colorAlt:color),rx:'3'}));
       if(bW>14){const t=svgEl('text',{x:x+bW/2,y:y-3,'text-anchor':'middle','font-size':'10',fill:C.ink,'font-weight':'600','font-family':'system-ui'});t.textContent=b.count;svg.appendChild(t);}
     } else {
       svg.appendChild(svgEl('rect',{x,y:pT+cH-2,width:bW,height:'2',fill:C.grid,rx:'1'}));
@@ -882,9 +903,30 @@ function renderBarChart(boxId,buckets,color,colorCurrent){
 function renderFeedChart(evs){renderBarChart('feedChart',getBuckets(evs,'feed'),'#e8a598','#c9776a');}
 function renderDiaperChart(evs){renderBarChart('diaperChart',getBuckets(evs,'diaper'),'#bcd3d6','#7aa8ac');}
 
+// amningar fördelade på dygnets timmar i valt intervall – natten (22–06) tonas mörkare
+function getHourBuckets(evs){
+  const cut=rangeCutoff();
+  const feeds=evs.filter(e=>e.type==='feed'&&e.ts>=cut);
+  return Array.from({length:24},(_,h)=>({
+    label:h%6===0?String(h).padStart(2,'0'):'',
+    count:feeds.filter(e=>new Date(e.ts).getHours()===h).length,
+    alt:h>=22||h<6
+  }));
+}
+function renderHourChart(evs){
+  const buckets=getHourBuckets(evs);
+  const total=buckets.reduce((s,b)=>s+b.count,0);
+  const night=buckets.reduce((s,b)=>s+(b.alt?b.count:0),0);
+  const cap=document.getElementById('nightShare');
+  if(!total){cap.textContent='';document.getElementById('hourChart').innerHTML='<div class="chart-empty">Inga amningar i valt intervall</div>';return;}
+  cap.textContent=`${night} av ${total} amningar på natten (22–06) · ${Math.round(night/total*100)}%`;
+  renderBarChart('hourChart',buckets,'#e8a598','#c9776a','#b9a5c9');
+}
+
 function renderCharts(evs,birthDate,birthWeight){
   _cEvs=evs;_cBD=birthDate;_cBW=birthWeight;
   renderFeedChart(evs);
+  renderHourChart(evs);
   renderDiaperChart(evs);
   renderWeightChart(evs,birthDate,birthWeight);
 }
