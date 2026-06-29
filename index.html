@@ -163,7 +163,9 @@
     </div>
 
     <div class="quick">
+      <button class="q" style="grid-column:span 2" onclick="logNap()"><span class="ico">💤</span><span class="t">Tupplur</span><span class="h">Dagsömn · loggas med ett tryck</span></button>
       <button class="q" onclick="openSheet('diaper')"><span class="ico">🌼</span><span class="t">Blöja</span><span class="h">Kiss eller bajs</span></button>
+      <button class="q" onclick="openSheet('nightsleep')"><span class="ico">🌙</span><span class="t">Nattsömn</span><span class="h">Betyg + dagbok</span></button>
       <button class="q" onclick="openSheet('note')"><span class="ico">✏️</span><span class="t">Anteckning</span><span class="h">Fritext</span></button>
       <button class="q" onclick="openSheet('weight')"><span class="ico">⚖️</span><span class="t">Vikt</span><span class="h">Gram</span></button>
     </div>
@@ -178,6 +180,8 @@
   <section class="view" id="view-stats">
     <h2 style="color:var(--plum)">Senaste 24h</h2>
     <div class="stat-grid" id="statGrid"></div>
+    <h2 style="color:var(--plum)">Nattsömn</h2>
+    <div class="stat" id="sleepStat"><div class="l">Ingen nattsömn loggad än</div></div>
     <h2 style="color:var(--plum)">Senaste vikt</h2>
     <div class="stat" id="weightStat"><div class="l">Ingen vikt loggad än</div></div>
     <div id="birthStatSection"></div>
@@ -192,6 +196,8 @@
       <div class="chart-box" id="feedChart"><div class="chart-empty">Laddar…</div></div>
       <h2 style="color:var(--plum)">Blöjor</h2>
       <div class="chart-box" id="diaperChart"><div class="chart-empty">Laddar…</div></div>
+      <h2 style="color:var(--plum)">Tupplurar</h2>
+      <div class="chart-box" id="napChart"><div class="chart-empty">Laddar…</div></div>
       <h2 style="color:var(--plum)">Viktutveckling</h2>
       <div class="chart-box" id="weightChart"><div class="chart-empty">Laddar…</div></div>
     </div>
@@ -286,8 +292,11 @@ const fmtTime=ts=>new Date(ts).toLocaleTimeString('sv-SE',{hour:'2-digit',minute
 const fmtDayKey=ts=>new Date(ts).toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
 const ago=ts=>{const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'nyss';if(m<60)return m+' min sedan';const h=Math.floor(m/60);return h+' h '+(m%60)+' min sedan';};
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️'};
-const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc'};
+const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️',nap:'💤',nightsleep:'🌙'};
+const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc',nap:'#dce6f0',nightsleep:'#e3def0'};
+// Nattsömnens kvalitet, ordnad 1 (sämst) → 4 (bäst) så snitt/trend funkar.
+const SLEEP_STATES=[{v:4,e:'😴',l:'Lugn natt'},{v:3,e:'🙂',l:'Helt okej'},{v:2,e:'😕',l:'Orolig'},{v:1,e:'😣',l:'Tuff natt'}];
+const sleepState=v=>SLEEP_STATES.find(s=>s.v===Math.round(v))||SLEEP_STATES[1];
 
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
 
@@ -375,6 +384,16 @@ function openSheet(kind){
     const hm=d=>`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     document.getElementById('fFrom').value=hm(from30);
     document.getElementById('fTo').value=hm(now);
+  } else if(kind==='nightsleep'){
+    c.innerHTML=`<h3>Nattsömn</h3>
+      <div class="field"><label>Hur var natten?</label>
+        <div class="chip-row" id="nsChips">
+          ${SLEEP_STATES.map(s=>`<div class="chip${s.v===3?' active':''}" data-v="${s.v}">${s.e} ${s.l}</div>`).join('')}
+        </div></div>
+      ${noteField(true)}
+      <button class="save" onclick="saveNightSleep()">Spara</button>
+      <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
+    chipify('nsChips');
   } else if(kind==='note'){
     c.innerHTML=`<h3>Anteckning</h3>${noteField(true)}
       <button class="save" onclick="saveNote()">Spara</button>
@@ -403,6 +422,16 @@ async function saveNote(){
   if(!note){toast('Skriv något först');return;}
   await put(STORE,{id:uid(),type:'note',ts:Date.now(),note});
   closeSheet();render();toast('Anteckning sparad ✏️');
+}
+async function logNap(){
+  await put(STORE,{id:uid(),type:'nap',ts:Date.now()});
+  render();toast('Tupplur loggad 💤');
+}
+async function saveNightSleep(){
+  const rating=parseInt(document.querySelector('#nsChips .chip.active').dataset.v,10);
+  const note=document.getElementById('noteV').value.trim();
+  await put(STORE,{id:uid(),type:'nightsleep',ts:Date.now(),rating,note});
+  closeSheet();render();toast('Nattsömn loggad 🌙');
 }
 async function saveManualFeed(){
   const f=document.getElementById('fFrom').value,t=document.getElementById('fTo').value;
@@ -497,10 +526,13 @@ function evRow(e){
   else if(e.type==='diaper'){a='Blöja';b=esc(e.val)+(e.note?' · '+esc(e.note):'');}
   else if(e.type==='note'){a='Anteckning';b=esc(e.note);}
   else if(e.type==='weight'){a='Vikt';b=esc(String(e.val))+' g'+(e.note?' · '+esc(e.note):'');}
+  else if(e.type==='nap'){a='Tupplur';b=e.note?esc(e.note):'';}
+  else if(e.type==='nightsleep'){const st=sleepState(e.rating);a='Nattsömn';b=`${st.e} ${st.l}`+(e.note?' · '+esc(e.note):'');}
+  const editFn=e.type==='feed'?`editFeed('${e.id}')`:e.type==='nightsleep'?`editNightSleep('${e.id}')`:`editNote('${e.id}')`;
   return `<div class="ev"><div class="dot" style="background:${META_BG[e.type]}">${META_ICON[e.type]}</div>
     <div class="body"><div class="a">${a}</div><div class="b">${b||''}</div></div>
     <div class="time">${fmtTime(e.ts)}</div>
-    <button class="del" onclick="${e.type==='feed'?`editFeed('${e.id}')`:`editNote('${e.id}')`}" title="${e.type==='feed'?'Ändra':'Kommentar'}">✎</button>
+    <button class="del" onclick="${editFn}" title="${e.type==='feed'||e.type==='nightsleep'?'Ändra':'Kommentar'}">✎</button>
     <button class="del" onclick="removeEv('${e.id}')">×</button></div>`;
 }
 async function removeEv(id){if(!confirm('Ta bort denna?'))return;await del(id);render();}
@@ -520,6 +552,28 @@ async function saveEditNote(id){
   const ev=await getEvent(id);if(!ev)return;
   await put(STORE,{...ev,note});
   closeSheet();render();toast('Kommentar sparad ✏️');
+}
+async function editNightSleep(id){
+  const ev=await getEvent(id);if(!ev)return;
+  const c=document.getElementById('sheetCard');
+  c.innerHTML=`<h3>Ändra nattsömn</h3>
+    <div class="field"><label>Hur var natten?</label>
+      <div class="chip-row" id="ensChips">
+        ${SLEEP_STATES.map(s=>`<div class="chip${s.v===ev.rating?' active':''}" data-v="${s.v}">${s.e} ${s.l}</div>`).join('')}
+      </div></div>
+    ${noteField(true)}
+    <button class="save" onclick="saveEditNightSleep('${id}')">Spara</button>
+    <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
+  chipify('ensChips');
+  document.getElementById('noteV').value=ev.note||'';
+  document.getElementById('sheet').classList.add('show');
+}
+async function saveEditNightSleep(id){
+  const ev=await getEvent(id);if(!ev)return;
+  const rating=parseInt(document.querySelector('#ensChips .chip.active').dataset.v,10);
+  const note=document.getElementById('noteV').value.trim();
+  await put(STORE,{...ev,rating,note});
+  closeSheet();render();toast('Nattsömn ändrad 🌙');
 }
 async function editFeed(id){
   const ev=await getEvent(id);if(!ev)return;
@@ -567,12 +621,28 @@ function renderStats(evs){
   const last=evs.filter(e=>e.ts>=cut);
   const feeds=last.filter(e=>e.type==='feed');
   const diapers=last.filter(e=>e.type==='diaper');
+  const naps=last.filter(e=>e.type==='nap');
   const avgMin=feeds.length?Math.round(feeds.reduce((s,e)=>s+(e.durMs||0),0)/feeds.length/60000):0;
   document.getElementById('statGrid').innerHTML=`
     <div class="stat"><div class="n">${feeds.length}</div><div class="l">Amningar</div></div>
     <div class="stat"><div class="n">${avgMin} min</div><div class="l">Snitt per amning</div></div>
     <div class="stat"><div class="n">${diapers.length}</div><div class="l">Blöjbyten</div></div>
-    <div class="stat"><div class="n">${diapers.filter(d=>d.val==='Bajs'||d.val==='Båda').length}</div><div class="l">Bajsblöjor</div></div>`;
+    <div class="stat"><div class="n">${diapers.filter(d=>d.val==='Bajs'||d.val==='Båda').length}</div><div class="l">Bajsblöjor</div></div>
+    <div class="stat" style="grid-column:span 2"><div class="n">${naps.length}</div><div class="l">Tupplurar</div></div>`;
+  // nattsömn: senaste betyg + snitt senaste 7 nätter
+  const ns=evs.filter(e=>e.type==='nightsleep').sort((a,b)=>b.ts-a.ts);
+  const sEl=document.getElementById('sleepStat');
+  if(sEl){
+    if(ns.length){
+      const lst=sleepState(ns[0].rating);
+      const recent=ns.filter(e=>e.ts>=Date.now()-7*864e5);
+      let avgTxt='';
+      if(recent.length){const avg=recent.reduce((s,e)=>s+e.rating,0)/recent.length;const ast=sleepState(avg);avgTxt=` · snitt ${recent.length} nätter: ${ast.e} ${ast.l}`;}
+      sEl.innerHTML=`<div class="n" style="font-size:1.4rem">${lst.e} ${lst.l}</div><div class="l">${new Date(ns[0].ts).toLocaleDateString('sv-SE')}${avgTxt}</div>`;
+    } else {
+      sEl.innerHTML='<div class="l">Ingen nattsömn loggad än</div>';
+    }
+  }
   const w=evs.filter(e=>e.type==='weight').sort((a,b)=>b.ts-a.ts);
   if(w.length){
     const latest=w[0];let trend='';
@@ -664,11 +734,13 @@ function renderBarChart(boxId,buckets,color,colorCurrent){
 
 function renderFeedChart(evs){renderBarChart('feedChart',getBuckets(evs,'feed'),'#e8a598','#c9776a');}
 function renderDiaperChart(evs){renderBarChart('diaperChart',getBuckets(evs,'diaper'),'#bcd3d6','#7aa8ac');}
+function renderNapChart(evs){renderBarChart('napChart',getBuckets(evs,'nap'),'#9bbf9a','#6f9a6e');}
 
 function renderCharts(evs,birthDate,birthWeight){
   _cEvs=evs;_cBD=birthDate;_cBW=birthWeight;
   renderFeedChart(evs);
   renderDiaperChart(evs);
+  renderNapChart(evs);
   renderWeightChart(evs,birthDate,birthWeight);
 }
 
