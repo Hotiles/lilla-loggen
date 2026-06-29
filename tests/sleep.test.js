@@ -80,5 +80,5 @@ test('nightsleep: latest rating is summarised in stats', async ({ page }) => {
 
   await page.locator('#nav-stats').click();
   await expect(page.locator('#sleepStat')).toContainText('Orolig');
-  await expect(page.locator('#sleepStat')).toContainText('snitt 1 nätter');
+  await expect(page.locator('#sleepStat')).toContainText('Snitt 7 dagar');
 });

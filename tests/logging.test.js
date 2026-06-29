@@ -37,6 +37,24 @@ test('diaper: chips are single-select', async ({ page }) => {
   await expect(page.locator('#dChips .chip.active')).toHaveAttribute('data-v', 'Torr');
 });
 
+test('diaper: time defaults to now', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Blöja' }).click();
+  await page.waitForSelector('#sheet.show');
+
+  const val = await page.locator('#dTime').inputValue();
+  expect(val).toMatch(/^\d{2}:\d{2}$/);
+});
+
+test('diaper: custom time is reflected in feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Blöja' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#dTime', '07:15');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await expect(page.locator('#feedList .ev .time').first()).toContainText('07:15');
+});
+
 test('diaper: note is shown in feed', async ({ page }) => {
   await page.locator('.q').filter({ hasText: 'Blöja' }).click();
   await page.waitForSelector('#sheet.show');
@@ -101,7 +119,7 @@ test('weight: value in grams is saved and shown in feed', async ({ page }) => {
 
 // ── Event management ────────────────────────────────────────────────────────
 
-test('event can be deleted', async ({ page }) => {
+test('event can be deleted via undo-toast', async ({ page }) => {
   await page.locator('.q').filter({ hasText: 'Blöja' }).click();
   await page.waitForSelector('#sheet.show');
   await page.locator('.save').click();
@@ -109,10 +127,25 @@ test('event can be deleted', async ({ page }) => {
 
   await expect(page.locator('#feedList .ev')).toHaveCount(1);
 
-  page.once('dialog', (dialog) => dialog.accept());
   await page.locator('#feedList .ev').first().locator('.del').last().click();
 
   await expect(page.locator('#feedList .ev')).toHaveCount(0);
+  await expect(page.locator('#undoToast')).toHaveClass(/show/);
+});
+
+test('deleting an event can be undone', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Blöja' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await page.locator('#feedList .ev').first().locator('.del').last().click();
+  await expect(page.locator('#feedList .ev')).toHaveCount(0);
+
+  await page.locator('#undoBtn').click();
+
+  await expect(page.locator('#feedList .ev')).toHaveCount(1);
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Kiss');
 });
 
 test('note can be edited on an existing event', async ({ page }) => {
