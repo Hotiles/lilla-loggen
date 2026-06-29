@@ -433,10 +433,13 @@ function openSheet(kind){
           <div class="chip" data-v="Båda">Båda</div>
           <div class="chip" data-v="Torr">Torr</div>
         </div></div>
+      <div class="field"><label>Tid</label><input type="time" id="dTime"></div>
       ${noteField()}
       <button class="save" onclick="saveDiaper()">Spara</button>
       <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
     chipify('dChips');
+    const dn=new Date();
+    document.getElementById('dTime').value=`${String(dn.getHours()).padStart(2,'0')}:${String(dn.getMinutes()).padStart(2,'0')}`;
   } else if(kind==='feed-manual'){
     c.innerHTML=`<h3>Amning i efterhand</h3>
       <div class="field"><label>Sida</label>
@@ -477,8 +480,16 @@ function closeSheet(){document.getElementById('sheet').classList.remove('show');
 async function saveDiaper(){
   const v=document.querySelector('#dChips .chip.active').dataset.v;
   const note=document.getElementById('noteV').value.trim();
-  await put(STORE,{id:uid(),type:'diaper',ts:Date.now(),val:v,note});
+  await put(STORE,{id:uid(),type:'diaper',ts:diaperTs(),val:v,note});
   closeSheet();render();toast('Blöja loggad 🌼');
+}
+function diaperTs(){
+  const hm=document.getElementById('dTime').value;
+  if(!hm)return Date.now();
+  const[h,m]=hm.split(':');
+  const d=new Date();d.setHours(h,m,0,0);
+  if(d.getTime()>Date.now()+60000)d.setTime(d.getTime()-864e5); // vald tid i framtiden = igår
+  return d.getTime();
 }
 async function saveNote(){
   const note=document.getElementById('noteV').value.trim();

@@ -37,6 +37,24 @@ test('diaper: chips are single-select', async ({ page }) => {
   await expect(page.locator('#dChips .chip.active')).toHaveAttribute('data-v', 'Torr');
 });
 
+test('diaper: time defaults to now', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Blöja' }).click();
+  await page.waitForSelector('#sheet.show');
+
+  const val = await page.locator('#dTime').inputValue();
+  expect(val).toMatch(/^\d{2}:\d{2}$/);
+});
+
+test('diaper: custom time is reflected in feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Blöja' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#dTime', '07:15');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await expect(page.locator('#feedList .ev .time').first()).toContainText('07:15');
+});
+
 test('diaper: note is shown in feed', async ({ page }) => {
   await page.locator('.q').filter({ hasText: 'Blöja' }).click();
   await page.waitForSelector('#sheet.show');
