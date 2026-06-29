@@ -14,6 +14,26 @@ async function logManualFeed(page, from, to) {
   await page.locator('#sheet').waitFor({ state: 'hidden' });
 }
 
+async function logManualFeedSide(page, from, to, side) {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fFrom', from);
+  await page.fill('#fTo', to);
+  if (side) await page.locator(`#sheet [data-v="${side}"]`).click();
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+}
+
+async function setBirthData(page, isoDate, grams) {
+  await page.locator('#nav-settings').click();
+  await page.fill('#birthDateInput', isoDate);
+  await page.locator('#birthDateInput').dispatchEvent('change');
+  if (grams != null) {
+    await page.fill('#birthWeightInput', String(grams));
+    await page.locator('#birthWeightInput').dispatchEvent('change');
+  }
+}
+
 async function logDiaper(page, type) {
   await page.locator('.q').filter({ hasText: 'Blöja' }).click();
   await page.waitForSelector('#sheet.show');
@@ -73,6 +93,61 @@ test('stats count Bajs and Båda as bajsblöjor, not Kiss or Torr', async ({ pag
   await expect(page.locator('#statGrid .stat').filter({ hasText: 'Bajsblöjor' }).locator('.n')).toHaveText('2');
 });
 
+test('diaper breakdown surfaces wet, poop and dry counts', async ({ page }) => {
+  await logDiaper(page, 'Kiss');
+  await logDiaper(page, 'Bajs');
+  await logDiaper(page, 'Båda');
+  await logDiaper(page, 'Torr');
+
+  await page.locator('#nav-stats').click();
+
+  // våta = Kiss + Båda, bajs = Bajs + Båda, torra = Torr
+  await expect(page.locator('#diaperBreakdown')).toContainText('2 våta');
+  await expect(page.locator('#diaperBreakdown')).toContainText('2 bajs');
+  await expect(page.locator('#diaperBreakdown')).toContainText('1 torra');
+});
+
+// ── Feeding rhythm ───────────────────────────────────────────────────────────
+
+test('rhythm shows average interval and longest pause between feeds', async ({ page }) => {
+  await logManualFeed(page, '08:00', '08:10'); // start 08:00
+  await logManualFeed(page, '10:00', '10:30'); // +2 h
+  await logManualFeed(page, '13:00', '13:20'); // +3 h
+
+  await page.locator('#nav-stats').click();
+
+  const rhythm = page.locator('#rhythmSection');
+  await expect(rhythm.locator('.stat').filter({ hasText: 'Snitt mellan' }).locator('.n')).toHaveText('2 h 30 min');
+  await expect(rhythm.locator('.stat').filter({ hasText: 'Längsta paus' }).locator('.n')).toHaveText('3 h 0 min');
+  await expect(rhythm.locator('.stat').filter({ hasText: 'Tid vid bröstet' }).locator('.n')).toHaveText('1 h 0 min');
+});
+
+test('rhythm asks for more feeds when there are none', async ({ page }) => {
+  await page.locator('#nav-stats').click();
+
+  await expect(page.locator('#rhythmSection')).toContainText('Logga fler amningar');
+});
+
+// ── Side balance ─────────────────────────────────────────────────────────────
+
+test('side balance counts left and right feeds', async ({ page }) => {
+  await logManualFeedSide(page, '08:00', '08:15', 'Vänster');
+  await logManualFeedSide(page, '10:00', '10:15', 'Vänster');
+  await logManualFeedSide(page, '12:00', '12:15', 'Höger');
+
+  await page.locator('#nav-stats').click();
+
+  const legend = page.locator('#sideBalance .sidebar-legend');
+  await expect(legend).toContainText('Vänster 2');
+  await expect(legend).toContainText('1 Höger');
+});
+
+test('side balance hidden when no sided feeds exist', async ({ page }) => {
+  await page.locator('#nav-stats').click();
+
+  await expect(page.locator('#sideBalance')).toBeEmpty();
+});
+
 // ── Weight stats ─────────────────────────────────────────────────────────────
 
 test('latest weight is shown in stats', async ({ page }) => {
@@ -99,6 +174,24 @@ test('weight trend shows difference from previous measurement', async ({ page })
   await page.locator('#nav-stats').click();
 
   await expect(page.locator('#weightStat')).toContainText('+250 g sedan förra');
+});
+
+test('weight shows gain rate and status against birth weight', async ({ page }) => {
+  const born = new Date();
+  born.setDate(born.getDate() - 14);
+  await setBirthData(page, born.toISOString().slice(0, 10), 3500);
+
+  await page.locator('#nav-home').click();
+  await page.locator('.q').filter({ hasText: 'Vikt' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#wVal', '4000');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await page.locator('#nav-stats').click();
+
+  await expect(page.locator('#weightStat')).toContainText('g/vecka');
+  await expect(page.locator('#weightStat')).toContainText('Över födelsevikten (+500 g)');
 });
 
 // ── Birth data ───────────────────────────────────────────────────────────────
