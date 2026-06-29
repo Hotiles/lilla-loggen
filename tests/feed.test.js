@@ -49,24 +49,27 @@ test('stop button saves feed and resets UI', async ({ page }) => {
   await page.locator('#stopBtn').click();
 
   await expect(page.locator('#toast')).toContainText('Amning sparad');
-  await expect(page.locator('#timer')).toHaveText('––:––');
-  await expect(page.locator('#timer')).toHaveClass(/idle/);
+  // after stopping, the hero leaves the running state and the feed retro button returns
   await expect(page.locator('#stopBtn')).toBeHidden();
+  await expect(page.locator('#feedRetroBtn')).toBeVisible();
+  await expect(page.locator('#timer')).not.toHaveClass(/idle/);
 
   await expect(page.locator('#feedList .ev')).toHaveCount(1);
   await expect(page.locator('#feedList .ev .a').first()).toHaveText('Amning');
   await expect(page.locator('#feedList .ev .b').first()).toContainText('Vänster');
 });
 
-test('clicking the active side button stops the session', async ({ page }) => {
+test('clicking the active side button keeps the session running (no accidental stop)', async ({ page }) => {
   await page.locator('#btnL').click();
   await expect(page.locator('#stopBtn')).toBeVisible();
 
   await page.locator('#btnL').click();
 
-  await expect(page.locator('#stopBtn')).toBeHidden();
-  await expect(page.locator('#timer')).toHaveText('––:––');
-  await expect(page.locator('#feedList .ev')).toHaveCount(1);
+  // tapping the active side again must NOT stop the feed
+  await expect(page.locator('#stopBtn')).toBeVisible();
+  await expect(page.locator('#btnL')).toHaveClass(/active/);
+  await expect(page.locator('#timer')).not.toHaveText('––:––');
+  await expect(page.locator('#feedList .ev')).toHaveCount(0);
 });
 
 test('feed is shown in the list after stopping', async ({ page }) => {
@@ -187,6 +190,43 @@ test('editing a logged feed updates its duration', async ({ page }) => {
 
   await expect(page.locator('#toast')).toContainText('Amning ändrad');
   await expect(page.locator('#feedList .ev .b').first()).toContainText('25:00');
+});
+
+test('an active feed survives a reload', async ({ page }) => {
+  await page.locator('#btnL').click();
+  await expect(page.locator('#stopBtn')).toBeVisible();
+  await page.waitForFunction(() => document.getElementById('timer').textContent !== '––:––');
+
+  await page.reload();
+  await page.waitForSelector('#feedList');
+
+  await expect(page.locator('#stopBtn')).toBeVisible();
+  await expect(page.locator('#btnL')).toHaveClass(/active/);
+  await page.waitForFunction(() => document.getElementById('timer').textContent !== '––:––');
+});
+
+test('idle hero suggests the opposite breast after a feed', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fFrom', '10:00');
+  await page.fill('#fTo', '10:15'); // default side is Vänster
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await expect(page.locator('#heroLabel')).toHaveText('Sedan senaste amning');
+  await expect(page.locator('#btnR')).toHaveClass(/suggest/);
+  await expect(page.locator('#sideTag')).toContainText('Höger');
+});
+
+test('active feed shows a mini indicator on other tabs', async ({ page }) => {
+  await page.locator('#btnL').click();
+  await expect(page.locator('#feedMini')).toBeHidden();
+
+  await page.locator('#nav-stats').click();
+  await expect(page.locator('#feedMini')).toBeVisible();
+
+  await page.locator('#feedMini').click();
+  await expect(page.locator('#view-home')).toHaveClass(/show/);
 });
 
 test('editing a feed: under one minute is rejected', async ({ page }) => {

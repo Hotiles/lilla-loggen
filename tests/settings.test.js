@@ -25,6 +25,25 @@ test('baby name persists after reload', async ({ page }) => {
   await expect(page.locator('#babyName')).toHaveText('Alma');
 });
 
+test('dark theme can be selected and persists across reload', async ({ page }) => {
+  await page.locator('#nav-settings').click();
+  await page.locator('#themeChips .chip[data-v="dark"]').click();
+
+  await expect(page.locator('body')).toHaveClass(/theme-dark/);
+
+  await page.reload();
+  await page.waitForSelector('#feedList');
+
+  await expect(page.locator('body')).toHaveClass(/theme-dark/);
+});
+
+test('light theme forces a light background regardless of time', async ({ page }) => {
+  await page.locator('#nav-settings').click();
+  await page.locator('#themeChips .chip[data-v="light"]').click();
+
+  await expect(page.locator('body')).not.toHaveClass(/theme-dark/);
+});
+
 test('export produces JSON with correct structure', async ({ page }) => {
   await page.locator('.q').filter({ hasText: 'Vikt' }).click();
   await page.waitForSelector('#sheet.show');
