@@ -7,7 +7,8 @@ Designad för hemskärmen – ett enda tryck loggar en amning, även mitt i natt
 
 - **Amning** – live-timer med vänster/höger-sida, historik med varaktighet
 - **Blöjor** – snabb-logg (Kiss, Bajs, Kiss+Bajs, Torr) med valfri anteckning
-- **Sömn** – start/stopp-timer och logg
+- **Tupplurar** – dagsömn räknas med ett tryck, syns i flöde och statistik
+- **Nattsömn** – kort dagbok efter natten med betyg (Lugn natt → Tuff natt) och fritext
 - **Vikt** – logg i gram med historik
 - **Anteckningar** – fria textnoteringar
 - **Export / import** – JSON-säkerhetskopia direkt från appen

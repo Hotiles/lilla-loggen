@@ -1,7 +1,7 @@
 # CLAUDE.md – Lilla loggen
 
 ## Vad det här är
-En liten **PWA** för att logga en bebis vardag: amning, blöjor, sömn, anteckningar och vikt.
+En liten **PWA** för att logga en bebis vardag: amning, blöjor, sömn (nattsömn & tupplurar), anteckningar och vikt.
 Byggd åt min fru att ha på hemskärmen. Hålls medvetet enkel och snabb att använda —
 det viktigaste är att kunna logga en amning med ett enda tryck, även mitt i natten.
 
@@ -39,6 +39,7 @@ Testerna körs med **Playwright** mot Chromium i headless-läge (`npm test`).
 
 - `tests/feed.test.js` – amnings-timern: start, stopp, sidbyten, manuell loggning, edge cases
 - `tests/logging.test.js` – blöja, anteckning, vikt, radering, inline-redigering
+- `tests/sleep.test.js` – tupplurar (snabbräkning) och nattsömn (betyg + dagbok)
 - `tests/stats.test.js` – statistik-vyn
 - `tests/settings.test.js` – inställningar och export/import-flödet
 
