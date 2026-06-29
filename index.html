@@ -71,6 +71,13 @@
   }
   .adj-btn:active{transform:scale(.96)}
   .last{font-size:.78rem;color:var(--plum-soft);margin-top:14px}
+  .retro-btn{
+    width:100%;margin-top:14px;border:1px solid var(--line);border-radius:16px;padding:13px;
+    font-size:.9rem;font-weight:600;background:var(--dawn-1);color:var(--plum);
+    cursor:pointer;transition:transform .08s,background .2s;display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .retro-btn:active{transform:scale(.97);background:var(--dawn-2)}
+  .retro-btn .ico{font-size:1.05rem;line-height:1}
 
   /* quick actions */
   .quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
@@ -178,7 +185,7 @@
       </div>
       <button class="stop-btn" id="stopBtn" style="display:none" onclick="stopFeed()">Avsluta amning</button>
       <div class="last" id="lastFeed"></div>
-      <button id="feedRetroBtn" style="border:none;background:transparent;color:var(--plum-soft);font-size:.75rem;cursor:pointer;padding:4px 0;margin-top:6px" onclick="openSheet('feed-manual')">+ Logga i efterhand</button>
+      <button class="retro-btn" id="feedRetroBtn" onclick="openSheet('feed-manual')"><span class="ico">🕓</span>Logga amning i efterhand</button>
     </div>
 
     <div class="quick">
@@ -315,6 +322,8 @@ function getMeta(k){return new Promise(res=>{const r=tx(META,'readonly').get(k);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const fmtClock=ms=>{const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000);return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;};
 const fmtTime=ts=>new Date(ts).toLocaleTimeString('sv-SE',{hour:'2-digit',minute:'2-digit'});
+// varaktighet som läsbar text ("18 min", "1 tim 5 min") – undviker mm:ss som ser ut som klockslag
+const fmtDur=ms=>{const m=Math.round(ms/60000);if(m<1)return 'under 1 min';if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return r?`${h} tim ${r} min`:`${h} tim`;};
 const fmtDayKey=ts=>new Date(ts).toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
 const ago=ts=>{const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'nyss';if(m<60)return m+' min sedan';const h=Math.floor(m/60);return h+' h '+(m%60)+' min sedan';};
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -396,13 +405,13 @@ function renderFeedUI(){
       if(next==='Vänster')bl.classList.add('suggest');
       else if(next==='Höger')br.classList.add('suggest');
       tag.textContent=next?('Nästa: '+next):'';
-      last.textContent=`Senast kl ${fmtTime(lastFeedEv.ts)} · ${lastFeedEv.side||'okänd sida'} · ${fmtClock(lastFeedEv.durMs||0)}`;
+      last.textContent=`Föregående amning · ${lastFeedEv.side||'okänd sida'} · ${fmtDur(lastFeedEv.durMs||0)}`;
     } else {
       t.classList.add('idle');t.textContent='––:––';lbl.textContent='Senaste amning';
       tag.textContent='';last.textContent='Ingen amning loggad än';
     }
   }
-  document.getElementById('feedRetroBtn').style.display=activeFeed?'none':'block';
+  document.getElementById('feedRetroBtn').style.display=activeFeed?'none':'flex';
   updateMini();
 }
 // rundad, glanceable text – inte en exakt stoppursvisning ("Ca" signalerar ungefärligt)
@@ -415,7 +424,7 @@ const fmtSince=ms=>{
 };
 function refreshIdleClock(){
   if(activeFeed||!lastFeedEv)return;
-  document.getElementById('timer').textContent=fmtSince(Date.now()-lastFeedEv.ts);
+  document.getElementById('timer').textContent=fmtSince(Date.now()-(lastFeedEv.end||lastFeedEv.ts));
 }
 function updateMini(){
   document.getElementById('feedMini').style.display=(activeFeed&&currentView!=='home')?'flex':'none';
