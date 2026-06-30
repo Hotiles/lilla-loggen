@@ -172,6 +172,72 @@
   .range-row{display:flex;gap:6px;margin-bottom:14px}
   .range-btn{flex:1;border:1px solid var(--line);background:var(--dawn-1);border-radius:10px;padding:8px 4px;font-size:.82rem;color:var(--plum-soft);cursor:pointer;font-family:inherit;transition:background .15s,color .15s}
   .range-btn.active{background:var(--rose);color:#fff;border-color:var(--rose)}
+
+  /* BHV-förberedelse */
+  .bhv-card{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:13px 14px;margin-bottom:9px;cursor:pointer;text-align:left;width:100%;font-family:inherit;color:var(--ink);transition:transform .08s}
+  .bhv-card:active{transform:scale(.99)}
+  .bhv-card .body{flex:1;min-width:0}
+  .bhv-card .a{font-weight:600;font-size:.95rem;color:var(--plum)}
+  .bhv-card .b{font-size:.76rem;color:var(--plum-soft);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .bhv-card .chev{color:var(--plum-soft);font-size:1.1rem;flex-shrink:0}
+  /* nästa besök som tydlig hjälte */
+  .bhv-hero{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:18px 18px 16px;margin-bottom:14px;cursor:pointer;transition:transform .08s}
+  .bhv-hero:active{transform:scale(.99)}
+  .bhv-hero .eyebrow{font-size:.66rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--rose-deep);font-weight:700}
+  .bhv-hero .htitle{font-family:"Iowan Old Style",Georgia,serif;font-size:1.5rem;color:var(--plum);margin:4px 0 2px}
+  .bhv-hero .when{font-size:.82rem;color:var(--plum-soft)}
+  .bhv-hero .badges{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+  .bhv-hero .cta{margin-top:14px;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--rose);color:#fff;border-radius:14px;padding:12px;font-weight:600;font-size:.95rem}
+  .bhv-overdue{box-shadow:0 0 0 2px var(--rose) inset}
+  .bhv-overdue .eyebrow{color:var(--rose-deep)}
+  .bhv-actions{display:flex;gap:8px;margin-top:12px}
+  .bhv-act{flex:1;border:1px solid var(--line);background:var(--dawn-1);border-radius:13px;padding:12px 8px;font-size:.88rem;font-weight:600;color:var(--plum);cursor:pointer;font-family:inherit}
+  .bhv-act.primary{background:var(--rose);color:#fff;border-color:var(--rose)}
+  .bhv-act:active{transform:scale(.97)}
+  .badge{display:inline-block;font-size:.64rem;font-weight:700;padding:3px 9px;border-radius:999px;letter-spacing:.3px}
+  .badge.doc{background:#dcebdc;color:#3f5e3f}
+  .badge.reg{background:#eee3ef;color:#6b5470}
+  .badge.cnt{background:var(--dawn-2);color:var(--plum-soft)}
+  .badge.talk{background:#f6ddd6;color:#9a4f3f}
+  .badge.late{background:#f3d9d2;color:#9a4f3f}
+  body.theme-dark .badge.doc{background:#2c3a2c;color:#bcd9bc}
+  body.theme-dark .badge.reg{background:#3a2f44;color:#d8c4dd}
+  body.theme-dark .badge.talk,body.theme-dark .badge.late{background:#4a2f2c;color:#e8b5a8}
+  .bhv-note{font-size:.74rem;color:var(--plum-soft);line-height:1.5;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:6px 0 14px}
+  .bhv-help{font-size:.78rem;color:var(--plum-soft);line-height:1.5;margin:2px 2px 12px}
+  .bhv-title{font-size:.7rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--plum-soft);margin:20px 2px 9px}
+  .bhv-back{border:none;background:transparent;color:var(--plum-soft);font-size:.9rem;cursor:pointer;padding:6px 2px;margin-bottom:4px;font-family:inherit}
+  .bhv-expand{width:100%;border:1px dashed var(--line);background:transparent;color:var(--plum-soft);border-radius:13px;padding:12px;font-size:.85rem;font-weight:600;cursor:pointer;font-family:inherit;margin-bottom:9px}
+  .bhv-topics{list-style:none;margin:0 0 4px;padding:0}
+  .bhv-topics li{font-size:.88rem;color:var(--ink);padding:7px 0 7px 18px;position:relative;border-bottom:1px solid var(--line)}
+  .bhv-topics li:last-child{border-bottom:none}
+  .bhv-topics li:before{content:"·";position:absolute;left:6px;color:var(--rose-deep);font-weight:700}
+  .prep-add{display:flex;gap:8px;margin-bottom:8px}
+  .prep-add input{flex:1;border:1px solid var(--line);border-radius:12px;padding:11px;font-size:.95rem;background:var(--dawn-1);color:var(--ink);font-family:inherit}
+  .prep-add button{border:none;border-radius:12px;min-width:48px;padding:0 16px;font-weight:600;background:var(--rose);color:#fff;cursor:pointer;font-size:.95rem}
+  .prep-item{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 12px;margin-bottom:7px}
+  .prep-item .ptext{flex:1;font-size:.88rem;color:var(--ink);cursor:pointer;padding:6px 0}
+  .prep-item.answered .ptext{text-decoration:line-through;opacity:.5}
+  .prep-item .px{border:none;background:var(--dawn-1);cursor:pointer;font-size:1.05rem;width:40px;height:40px;border-radius:11px;color:var(--plum-soft);line-height:1;display:grid;place-items:center;flex-shrink:0}
+  .prep-item .px:active{background:var(--dawn-2)}
+  .prep-item .px.done{color:var(--leaf)}
+  /* milstolpar: neutralt samtalsstöd, inte godkänt/underkänt */
+  .ms-row{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+  .ms-row:last-child{border-bottom:none}
+  .ms-row .mtext{flex:1;font-size:.88rem;color:var(--ink);line-height:1.35}
+  .ms-opts{display:flex;gap:6px;flex-shrink:0}
+  .ms-opt{border:1px solid var(--line);background:var(--dawn-1);border-radius:999px;padding:7px 12px;font-size:.78rem;font-weight:600;color:var(--plum-soft);cursor:pointer;font-family:inherit;white-space:nowrap}
+  .ms-opt:active{transform:scale(.95)}
+  .ms-opt.yes.sel{background:var(--sky);color:var(--ink);border-color:var(--sky)}
+  .ms-opt.talk.sel{background:#f6ddd6;color:#9a4f3f;border-color:#eebaad}
+  body.theme-dark .ms-opt.talk.sel{background:#4a2f2c;color:#e8b5a8;border-color:#6b4540}
+  .bhv-sumtext{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;font-size:.86rem;line-height:1.5;color:var(--ink)}
+  .bhv-sumtext .copy{margin-top:8px;border:1px solid var(--line);background:var(--dawn-1);border-radius:10px;padding:8px 14px;font-size:.8rem;font-weight:600;color:var(--plum);cursor:pointer;font-family:inherit}
+  .bhv-booking{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:4px 0 14px}
+  .bhv-booking .booked{font-size:.9rem;color:var(--plum)}
+  .bhv-booking .field{margin-bottom:0}
+  .bhv-booking .bhv-actions{margin-top:10px}
+  .bhv-empty{color:var(--plum-soft);font-size:.85rem;padding:6px 2px 12px}
 </style>
 </head>
 <body>
@@ -248,6 +314,11 @@
     </div>
   </section>
 
+  <!-- BVC-FÖRBEREDELSE -->
+  <section class="view" id="view-bhv">
+    <div id="bhvContent"></div>
+  </section>
+
   <!-- INSTÄLLNINGAR -->
   <section class="view" id="view-settings">
     <h2 style="color:var(--plum)">Inställningar</h2>
@@ -306,6 +377,7 @@
 <nav>
   <button class="active" id="nav-home" onclick="show('home')"><span class="ni">🏠</span>Hem</button>
   <button id="nav-stats" onclick="show('stats')"><span class="ni">📊</span>Statistik</button>
+  <button id="nav-bhv" onclick="show('bhv')"><span class="ni">🩺</span>BVC</button>
   <button id="nav-settings" onclick="show('settings')"><span class="ni">⚙️</span>Inställningar</button>
 </nav>
 
@@ -352,8 +424,8 @@ const fmtDur=ms=>{const m=Math.round(ms/60000);if(m<1)return 'under 1 min';if(m<
 const fmtDayKey=ts=>new Date(ts).toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
 const ago=ts=>{const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'nyss';if(m<60)return m+' min sedan';const h=Math.floor(m/60);return h+' h '+(m%60)+' min sedan';};
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️',nap:'💤',nightsleep:'🌙'};
-const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc',nap:'#dce6f0',nightsleep:'#e3def0'};
+const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️',nap:'💤',nightsleep:'🌙',visit:'🩺'};
+const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc',nap:'#dce6f0',nightsleep:'#e3def0',visit:'#dcebdc'};
 // Nattsömnens kvalitet, ordnad 1 (sämst) → 4 (bäst) så snitt/trend funkar.
 const SLEEP_STATES=[{v:4,e:'😴',l:'Lugn natt'},{v:3,e:'🙂',l:'Helt okej'},{v:2,e:'😕',l:'Orolig'},{v:1,e:'😣',l:'Tuff natt'}];
 const sleepState=v=>SLEEP_STATES.find(s=>s.v===Math.round(v))||SLEEP_STATES[1];
@@ -626,12 +698,13 @@ async function render(){
   lastFeedEv=evs.find(e=>e.type==='feed')||null;
   lastFeedSide=lastFeedEv?lastFeedEv.side:null;
   renderFeedUI();
-  // feed list grouped by day
+  // feed list grouped by day – BVC-besök (type:'visit') hör hemma i BVC-vyn, inte i flödet
+  const logEvs=evs.filter(e=>e.type!=='visit');
   const list=document.getElementById('feedList');
-  if(!evs.length){list.innerHTML='<div class="empty">Inga händelser än.<br>Tryck på en knapp ovan för att börja logga.</div>';}
+  if(!logEvs.length){list.innerHTML='<div class="empty">Inga händelser än.<br>Tryck på en knapp ovan för att börja logga.</div>';}
   else{
     let html='',curDay='';
-    for(const e of evs.slice(0,60)){
+    for(const e of logEvs.slice(0,60)){
       const dk=fmtDayKey(e.ts);
       if(dk!==curDay){curDay=dk;html+=`<div class="day">${dk}</div>`;}
       html+=evRow(e);
@@ -641,6 +714,7 @@ async function render(){
   const[birthDate,birthWeight]=await Promise.all([getMeta('birthDate'),getMeta('birthWeight')]);
   renderStats(evs,birthDate,birthWeight);
   renderCharts(evs,birthDate,birthWeight);
+  renderBhv(evs,birthDate);
 }
 function evRow(e){
   let a='',b='';
@@ -1073,12 +1147,13 @@ function renderWeightChart(evs,birthDate,birthWeight){
 // ---------- nav ----------
 function show(v){
   currentView=v;
-  ['home','stats','settings'].forEach(x=>{
+  ['home','stats','bhv','settings'].forEach(x=>{
     document.getElementById('view-'+x).classList.toggle('show',x===v);
     document.getElementById('nav-'+x).classList.toggle('active',x===v);
   });
   updateMini();
   if(v==='settings')updateBackupStatus();
+  if(v==='bhv'){bhvView='list';renderBhv();}
 }
 
 // ---------- name + data ----------
@@ -1199,6 +1274,421 @@ async function initTheme(){
 }
 // håll auto-temat aktuellt när appen kommer i förgrunden igen
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&themeMode==='auto')applyTheme();});
+
+// ---------- BVC-förberedelse (BHV) ----------
+// Statiskt besöksschema. Tider är nationellt fasta (certainty:'fixed') eller regionalt
+// varierande (certainty:'regional'). Källa: Folkhälsomyndigheten / Rikshandboken (juni 2026).
+// Appen förbereder samtalet – barnets kallelse från BVC gäller alltid.
+const BHV_SCHEDULE=[
+  {age:'1v',ageLabel:'1 vecka',ageInDays:7,type:'hembesök',withDoctor:false,certainty:'regional',
+    topics:['Första besöket – ofta i hemmet','Amning och viktuppgång','Hur mår du som förälder?','Dygnsrytm och sömn'],milestones:[]},
+  {age:'2v',ageLabel:'2 veckor',ageInDays:14,type:'mottagning',withDoctor:false,certainty:'regional',
+    topics:['Uppföljning av vikt','Amning','Förälderns mående','Navel och hud'],milestones:[]},
+  {age:'4v',ageLabel:'4 veckor',ageInDays:28,type:'mottagning',withDoctor:true,certainty:'fixed',
+    topics:['Teambesök med läkare','Somatisk undersökning','Tillväxt och amning'],
+    milestones:[{id:'4v-1',text:'Fäster blicken kort',domain:'motorik'},{id:'4v-2',text:'Reagerar på ljud',domain:'kommunikation'},{id:'4v-3',text:'Börjar få dygnsrytm',domain:'socialt'}]},
+  {age:'6v',ageLabel:'6 veckor',ageInDays:42,type:'mottagning',withDoctor:false,certainty:'fixed',
+    topics:['Rotavirus dos 1','EPDS – förälderns mående','Utvecklingsuppföljning','Amning och viktuppgång'],
+    milestones:[{id:'6v-1',text:'Tittar mot ansikten',domain:'socialt'},{id:'6v-2',text:'Börjar le i kontakt (socialt leende)',domain:'socialt'},{id:'6v-3',text:'Lyfter huvudet en stund i magläge',domain:'motorik'},{id:'6v-4',text:'Följer föremål med blicken en bit',domain:'motorik'}]},
+  {age:'3man',ageLabel:'3 mån',ageInDays:91,type:'mottagning',withDoctor:false,certainty:'fixed',
+    topics:['Rotavirus dos 2','Pneumokock dos 1','Hexavalent dos 1','Tillväxt och utveckling'],
+    milestones:[{id:'3man-1',text:'Ler tydligt tillbaka',domain:'socialt'},{id:'3man-2',text:'Joller och olika ljud',domain:'språk'},{id:'3man-3',text:'Håller huvudet stadigt',domain:'motorik'},{id:'3man-4',text:'För händerna till mitten/munnen',domain:'motorik'},{id:'3man-5',text:'Tittar på sina händer',domain:'kommunikation'}]},
+  {age:'5man',ageLabel:'5 mån',ageInDays:152,type:'mottagning',withDoctor:false,certainty:'fixed',
+    topics:['Rotavirus dos 3','Pneumokock dos 2','Hexavalent dos 2','Smakportioner snart aktuellt'],
+    milestones:[{id:'5man-1',text:'Sträcker sig efter och greppar föremål',domain:'motorik'},{id:'5man-2',text:'Rullar åt något håll',domain:'motorik'},{id:'5man-3',text:'Gensvarar med ljud i "samtal"',domain:'språk'},{id:'5man-4',text:'Nyfiken på omgivningen',domain:'socialt'}]},
+  {age:'6man',ageLabel:'6 mån',ageInDays:182,type:'mottagning',withDoctor:true,certainty:'fixed',
+    topics:['Teambesök med läkare','Somatisk undersökning','Utvecklingsuppföljning','Introduktion av mat'],
+    milestones:[{id:'6man-1',text:'Sitter med visst stöd',domain:'motorik'},{id:'6man-2',text:'För saker till munnen',domain:'motorik'},{id:'6man-3',text:'Byter föremål mellan händerna',domain:'motorik'},{id:'6man-4',text:'Vänder sig mot ljud och röster',domain:'kommunikation'},{id:'6man-5',text:'Skrattar',domain:'socialt'}]},
+  {age:'8man',ageLabel:'8 mån',ageInDays:243,type:'hembesök',withDoctor:false,certainty:'regional',
+    topics:['Hembesök – barnsäkerhet i hemmet','Förflyttning och sömn','Mat och måltider'],
+    milestones:[{id:'8man-1',text:'Sitter stadigt utan stöd',domain:'motorik'},{id:'8man-2',text:'Börjar förflytta sig (åla/kravla)',domain:'motorik'},{id:'8man-3',text:'Jollrar med stavelser ("ba-ba", "da-da")',domain:'språk'},{id:'8man-4',text:'Främlingsrädsla (helt normalt)',domain:'socialt'}]},
+  {age:'10man',ageLabel:'10 mån',ageInDays:304,type:'mottagning',withDoctor:false,certainty:'regional',
+    topics:['Utvecklingsuppföljning','Språk och samspel','Rörelse och motorik'],
+    milestones:[{id:'10man-1',text:'Reser sig mot möbler',domain:'motorik'},{id:'10man-2',text:'Pincettgrepp (tumme–pekfinger)',domain:'motorik'},{id:'10man-3',text:'Förstår enkla återkommande ord',domain:'kommunikation'},{id:'10man-4',text:'Härmar ljud och gester (vinka)',domain:'kommunikation'}]},
+  {age:'12man',ageLabel:'12 mån',ageInDays:365,type:'mottagning',withDoctor:true,certainty:'fixed',
+    topics:['Pneumokock dos 3','Hexavalent dos 3','Teambesök med läkare','Kost och rörelse'],
+    milestones:[{id:'12man-1',text:'Tar sig fram längs möbler eller börjar gå',domain:'motorik'},{id:'12man-2',text:'Säger kanske enstaka ord med betydelse',domain:'språk'},{id:'12man-3',text:'Pekar på det den vill ha',domain:'kommunikation'},{id:'12man-4',text:'Förstår enkla uppmaningar',domain:'kommunikation'}]},
+  {age:'18man',ageLabel:'18 mån',ageInDays:547,type:'mottagning',withDoctor:false,certainty:'fixed',
+    topics:['MPR dos 1','Språkutveckling','Lek och samspel'],
+    milestones:[{id:'18man-1',text:'Går säkert',domain:'motorik'},{id:'18man-2',text:'Säger flera ord',domain:'språk'},{id:'18man-3',text:'Pekar på kroppsdelar/bilder vid fråga',domain:'kommunikation'},{id:'18man-4',text:'Dricker ur mugg',domain:'motorik'},{id:'18man-5',text:'Delar uppmärksamhet ("titta!")',domain:'socialt'}]},
+  {age:'25ar',ageLabel:'2,5 år',ageInDays:912,type:'mottagning',withDoctor:true,certainty:'fixed',
+    topics:['Teambesök','Språk och tal','Lek och självständighet'],
+    milestones:[{id:'25ar-1',text:'Springer',domain:'motorik'},{id:'25ar-2',text:'Sätter ihop två–tre ord till meningar',domain:'språk'},{id:'25ar-3',text:'Leker låtsaslek',domain:'socialt'},{id:'25ar-4',text:'Äter och klär av sig delvis själv',domain:'motorik'},{id:'25ar-5',text:'Känner igen sig själv',domain:'socialt'}]},
+  {age:'3ar',ageLabel:'3 år',ageInDays:1095,type:'mottagning',withDoctor:true,certainty:'fixed',
+    topics:['Teambesök','Tal och språk','Samspel med andra barn'],
+    milestones:[{id:'3ar-1',text:'Springer och klättrar',domain:'motorik'},{id:'3ar-2',text:'Talar i korta meningar',domain:'språk'},{id:'3ar-3',text:'Leker låtsaslek med andra',domain:'socialt'},{id:'3ar-4',text:'Klär av sig delvis själv',domain:'motorik'}]},
+  {age:'4ar',ageLabel:'4 år',ageInDays:1460,type:'mottagning',withDoctor:false,certainty:'regional',
+    topics:['Strukturerat syn- och hörseltest','Tal och språk','Rörelse och självständighet'],
+    milestones:[{id:'4ar-1',text:'Förstås av andra i tal',domain:'språk'},{id:'4ar-2',text:'Hoppar och balanserar',domain:'motorik'},{id:'4ar-3',text:'Ritar en enkel figur',domain:'motorik'},{id:'4ar-4',text:'Klär på sig mestadels själv',domain:'motorik'},{id:'4ar-5',text:'Leker med andra barn',domain:'socialt'}]},
+  {age:'5ar',ageLabel:'5 år',ageInDays:1825,type:'mottagning',withDoctor:false,certainty:'fixed',
+    topics:['Påfyllnad difteri/stelkramp/kikhosta/polio','Skolförberedelse','Språk och finmotorik'],
+    milestones:[{id:'5ar-1',text:'Berättar sammanhängande',domain:'språk'},{id:'5ar-2',text:'Klipper med sax',domain:'motorik'},{id:'5ar-3',text:'Tecknar igenkännbara figurer',domain:'motorik'},{id:'5ar-4',text:'Klär sig själv',domain:'motorik'},{id:'5ar-5',text:'Samspelar i regellekar',domain:'socialt'}]},
+];
+const schedById=id=>BHV_SCHEDULE.find(s=>s.age===id);
+
+// barnets ålder i dygn ur meta.birthDate ("YYYY-MM-DD"); null om datum saknas
+function childAgeInDays(birthDate,now){
+  if(!birthDate)return null;
+  const[y,m,d]=String(birthDate).split('-').map(Number);
+  if(!y||!m||!d)return null;
+  const born=new Date(y,m-1,d,0,0,0).getTime();
+  return Math.max(0,Math.floor((now-born)/864e5));
+}
+// närmast relevanta kommande besök för en given ålder
+function getVisitForAge(ageInDays){
+  if(ageInDays==null)return null;
+  return BHV_SCHEDULE.find(s=>s.ageInDays>=ageInDays)||BHV_SCHEDULE[BHV_SCHEDULE.length-1];
+}
+function bhvTargetTs(s,birthDate){
+  if(!s||!birthDate)return null;
+  const[y,m,d]=String(birthDate).split('-').map(Number);
+  if(!y)return null;
+  return new Date(y,m-1,d,12).getTime()+s.ageInDays*864e5;
+}
+
+// Ren summering av loggdata för ett besök. Muterar inget. now injiceras för testbarhet.
+// Returnerar bara fält som går att räkna ur befintlig data (feed/diaper/nap/nightsleep/weight).
+function summarizeForVisit(events,period,now){
+  const {from,to}=period;
+  const inRange=events.filter(e=>e.ts>=from&&e.ts<to);
+  const days=Math.max(1,(to-from)/864e5);
+  const r1=n=>Math.round(n*10)/10;
+  const feeds=inRange.filter(e=>e.type==='feed');
+  const feeding=feeds.length?{
+    perDay:r1(feeds.length/days),
+    avgMinutesPerFeed:Math.round(feeds.reduce((s,e)=>s+(e.durMs||0),0)/feeds.length/60000),
+    minutesPerDay:Math.round(feeds.reduce((s,e)=>s+(e.durMs||0),0)/days/60000)
+  }:null;
+  const dps=inRange.filter(e=>e.type==='diaper');
+  const diapers=dps.length?{
+    wetPerDay:r1(dps.filter(d=>d.val==='Kiss'||d.val==='Båda').length/days),
+    dirtyPerDay:r1(dps.filter(d=>d.val==='Bajs'||d.val==='Båda').length/days)
+  }:null;
+  const napEvs=inRange.filter(e=>e.type==='nap');
+  const naps=napEvs.length?{perDay:r1(napEvs.length/days)}:null;
+  const ns=inRange.filter(e=>e.type==='nightsleep');
+  let nightSleep=null;
+  if(ns.length){const avg=ns.reduce((s,e)=>s+e.rating,0)/ns.length;nightSleep={avgRating:r1(avg),label:sleepState(avg).l,nights:ns.length};}
+  const weights=inRange.filter(e=>e.type==='weight').sort((a,b)=>a.ts-b.ts);
+  const weight=weights.length?{
+    latest:weights[weights.length-1].val,
+    latestDate:weights[weights.length-1].ts,
+    deltaSincePeriodStart:weights.length>1?weights[weights.length-1].val-weights[0].val:null
+  }:null;
+  return {period:{from,to},feeding,diapers,naps,nightSleep,weight};
+}
+// intervall för summeringen: från föregående avslutade besök till detta besök (annars 14 dygn)
+function bhvPeriod(rec,evs,now){
+  const to=rec.status==='done'?rec.ts:now;
+  const dones=evs.filter(e=>e.type==='visit'&&e.status==='done'&&e.ts<to).sort((a,b)=>b.ts-a.ts);
+  const from=dones.length?dones[0].ts:to-14*864e5;
+  return {from,to};
+}
+
+// ---- rendering ----
+let bhvView='list',bhvScheduleExpanded=false,bhvOutcomeOpen=false;
+// Full innerHTML-rerender, men bevara text och fokus i ev. öppna fält så att
+// t.ex. en milstolpe-knappning inte raderar en halvskriven fundering.
+const BHV_FIELDS=['bhvPrepInput','bhvQuickPrep','bhvSched','ocWeight','ocNotes','ocNext'];
+function bhvCaptureFields(el){
+  const active=document.activeElement;
+  const out={focus:active&&BHV_FIELDS.includes(active.id)?active.id:null,sel:null};
+  BHV_FIELDS.forEach(id=>{const n=el.querySelector('#'+id);if(n&&n.value)out[id]=n.value;});
+  if(out.focus&&active&&typeof active.selectionStart==='number')out.sel=[active.selectionStart,active.selectionEnd];
+  return out;
+}
+function bhvRestoreFields(el,saved){
+  BHV_FIELDS.forEach(id=>{if(saved[id]!=null){const n=el.querySelector('#'+id);if(n&&!n.value)n.value=saved[id];}});
+  if(saved.focus){const n=el.querySelector('#'+saved.focus);if(n){n.focus();if(saved.sel&&typeof n.selectionStart==='number'){try{n.setSelectionRange(saved.sel[0],saved.sel[1]);}catch(e){}}}}
+}
+function renderBhv(evs,birthDate){
+  const el=document.getElementById('bhvContent');if(!el)return;
+  const draw=(list,bd)=>{
+    const saved=bhvCaptureFields(el);
+    el.innerHTML=bhvView==='list'?bhvListHtml(list,bd,Date.now()):bhvDetailHtml(bhvView,list,bd,Date.now());
+    bhvRestoreFields(el,saved);
+  };
+  if(evs&&birthDate!==undefined){draw(evs,birthDate);return;}
+  Promise.all([allEvents(),getMeta('birthDate')]).then(([list,bd])=>draw(list,bd));
+}
+function bhvBadges(s){
+  return [s.withDoctor?'<span class="badge doc">Läkare</span>':'',
+          s.certainty==='regional'?'<span class="badge reg">Varierar regionalt</span>':''].filter(Boolean);
+}
+// milstolpe-läge: {id:'yes'|'talk'}. Migrerar ev. gammalt checked[] (=> 'yes') vid läsning.
+function msState(rec){
+  if(rec&&rec.ms)return rec.ms;
+  const o={};if(rec&&rec.checked)rec.checked.forEach(id=>o[id]='yes');return o;
+}
+function msCounts(rec){const v=Object.values(msState(rec));return {yes:v.filter(x=>x==='yes').length,talk:v.filter(x=>x==='talk').length};}
+function bhvCountBadges(rec){
+  const out=[];const prepN=rec&&rec.prep?rec.prep.length:0;const {talk}=msCounts(rec);
+  if(prepN)out.push(`<span class="badge cnt">${prepN} fundering${prepN===1?'':'ar'}</span>`);
+  if(talk)out.push(`<span class="badge talk">💬 ${talk} att ta upp</span>`);
+  return out;
+}
+function bhvIsOverdue(s,birthDate,rec,now){
+  if(rec&&(rec.status==='done'||rec.status==='skipped'))return false;
+  // bokad tid styr om den finns, annars den ungefärliga måldagen
+  const ref=(rec&&rec.scheduledAt)||bhvTargetTs(s,birthDate);
+  return ref!=null&&ref<now;
+}
+const fmtSched=ts=>new Date(ts).toLocaleString('sv-SE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+function toLocalInput(ts){const d=new Date(ts),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
+// Vi känner inte den exakta tiden – kallelsen från BVC gäller. Därför bara en ungefärlig
+// uppskattning ("om ca 4 veckor") tills föräldern lagt in den bokade tiden manuellt.
+function bhvWhenLabel(s,birthDate,rec,now){
+  if(rec&&rec.scheduledAt){
+    return rec.scheduledAt<now?`Bokad tid passerad · ${fmtSched(rec.scheduledAt)}`:`Bokat ${fmtSched(rec.scheduledAt)}`;
+  }
+  const ts=bhvTargetTs(s,birthDate);
+  if(!ts)return 'Ungefär vid '+s.ageLabel;
+  const d=Math.round((ts-now)/864e5);
+  if(d<0){const p=-d;return p<=10?'Ungefär nu (tid ej bokad)':`Borde ha varit för ca ${Math.round(p/7)} v sedan`;}
+  if(d===0)return 'Ungefär nu (tid ej bokad)';
+  if(d<=10)return `Om ca ${d} ${d===1?'dag':'dagar'} (tid ej bokad)`;
+  if(d<90){const w=Math.round(d/7);return `Om ca ${w} ${w===1?'vecka':'veckor'} (tid ej bokad)`;}
+  return `Om ca ${Math.round(d/30)} mån (tid ej bokad)`;
+}
+// hjältekort = nästa (eller försenade) besöket
+function bhvHeroHtml(s,rec,birthDate,now){
+  const overdue=bhvIsOverdue(s,birthDate,rec,now);
+  const badges=[...bhvBadges(s),...bhvCountBadges(rec)];
+  let h=`<div class="bhv-hero${overdue?' bhv-overdue':''}" onclick="openBhv('${s.age}')">
+    <div class="eyebrow">${overdue?'Borde redan ha varit':'Nästa besök'}</div>
+    <div class="htitle">${esc(s.ageLabel)} · ${s.type}</div>
+    <div class="when">${bhvWhenLabel(s,birthDate,rec,now)}</div>
+    ${badges.length?`<div class="badges">${badges.join('')}</div>`:''}`;
+  if(overdue){
+    h+=`<div class="bhv-actions" onclick="event.stopPropagation()">
+      <button class="bhv-act primary" onclick="markVisitDone('${s.age}')">Markera som genomförd</button>
+      <button class="bhv-act" onclick="skipVisit('${s.age}')">Hoppa över</button></div>`;
+  } else h+=`<div class="cta">Förbered besöket ›</div>`;
+  return h+`</div>`;
+}
+function bhvCardHtml(s,rec,birthDate,now){
+  const status=rec&&rec.status;
+  const overdue=bhvIsOverdue(s,birthDate,rec,now);
+  const badges=[...bhvBadges(s),...bhvCountBadges(rec)];
+  if(overdue)badges.unshift('<span class="badge late">Försenat</span>');
+  let when;
+  if(status==='done')when='Genomfört '+new Date(rec.ts).toLocaleDateString('sv-SE');
+  else if(status==='skipped')when='Överhoppat';
+  else when=bhvWhenLabel(s,birthDate,rec,now);
+  return `<div class="bhv-card" onclick="openBhv('${s.age}')">
+    <div class="body"><div class="a">${esc(s.ageLabel)} · ${s.type}</div>
+    <div class="b">${when}${badges.map(b=>' '+b).join('')}</div></div>
+    <span class="chev">›</span></div>`;
+}
+function bhvListHtml(evs,birthDate,now){
+  const records=evs.filter(e=>e.type==='visit');
+  const recByAge={};records.forEach(r=>recByAge[r.age]=r);
+  const age=childAgeInDays(birthDate,now);
+  let html='<h2 style="color:var(--plum)">BVC-besök</h2>';
+  html+=`<div class="bhv-help">Det här förbereder samtalet med BVC – det ersätter inte din kallelse. Barnets kallelse gäller alltid. Aktuell information finns på 1177.</div>`;
+  if(age==null){
+    html+=`<div class="bhv-note">Fyll i barnets <b>födelsedatum</b> under Inställningar så visar vi vilka besök som är på gång och när.</div>`;
+    html+=`<div class="bhv-card" onclick="show('settings')"><div class="body"><div class="a">⚙️ Till Inställningar</div><div class="b">Lägg till födelsedatum</div></div><span class="chev">›</span></div>`;
+    return html;
+  }
+  const closedAges=new Set(records.filter(r=>r.status==='done'||r.status==='skipped').map(r=>r.age));
+  const touched=r=>{if(!r)return false;const c=msCounts(r);return (r.prep&&r.prep.length)||c.yes||c.talk||r.outcome;};
+  const upcoming=BHV_SCHEDULE.filter(s=>!closedAges.has(s.age)&&(s.ageInDays>=age-21||touched(recByAge[s.age]))).sort((a,b)=>a.ageInDays-b.ageInDays);
+  if(upcoming.length){
+    const next=upcoming[0];
+    html+=`<div class="prep-add" style="margin-top:10px">
+      <input id="bhvQuickPrep" placeholder="Fundering inför ${esc(next.ageLabel)}…" onkeydown="if(event.key==='Enter')addPrepFromQuick()">
+      <button onclick="addPrepFromQuick()">Lägg till</button></div>`;
+  }
+  if(!upcoming.length)html+=`<div class="bhv-empty">Inga fler besök i schemat.</div>`;
+  else{
+    html+=bhvHeroHtml(upcoming[0],recByAge[upcoming[0].age],birthDate,now);
+    if(upcoming[1]){html+=`<div class="bhv-title">Därefter</div>`+bhvCardHtml(upcoming[1],recByAge[upcoming[1].age],birthDate,now);}
+    const rest=upcoming.slice(2);
+    if(rest.length){
+      html+=`<button class="bhv-expand" onclick="toggleBhvSchedule()">${bhvScheduleExpanded?'Dölj resten av schemat':`Hela schemat (${rest.length} till) ›`}</button>`;
+      if(bhvScheduleExpanded)rest.forEach(s=>{html+=bhvCardHtml(s,recByAge[s.age],birthDate,now);});
+    }
+  }
+  const previous=records.filter(r=>(r.status==='done'||r.status==='skipped')&&schedById(r.age)).sort((a,b)=>b.ts-a.ts);
+  if(previous.length){
+    html+=`<div class="bhv-title">Tidigare</div>`;
+    previous.forEach(r=>{html+=bhvCardHtml(schedById(r.age),r,birthDate,now);});
+  }
+  return html;
+}
+function transientVisit(s,birthDate){return {age:s.age,type:'visit',status:'upcoming',prep:[],ms:{},outcome:null,scheduledAt:null,ts:bhvTargetTs(s,birthDate)||Date.now()};}
+function bhvSummaryHtml(rec,evs,now){
+  const period=bhvPeriod(rec,evs,now);
+  const s=summarizeForVisit(evs,period,now);
+  const pf=ts=>new Date(ts).toLocaleDateString('sv-SE',{day:'numeric',month:'short'});
+  const hadPrev=evs.some(e=>e.type==='visit'&&e.status==='done'&&e.ts<period.to);
+  const windowLabel=hadPrev?'sedan förra besöket':'senaste 2 veckorna';
+  // läsbar mening att läsa upp för BVC
+  const parts=[];
+  if(s.feeding)parts.push(`ca ${s.feeding.perDay} amningar/dygn (${s.feeding.avgMinutesPerFeed} min/gång)`);
+  if(s.diapers)parts.push(`${s.diapers.wetPerDay} våta och ${s.diapers.dirtyPerDay} bajsblöjor/dygn`);
+  if(s.naps)parts.push(`${s.naps.perDay} tupplurar/dygn`);
+  if(s.nightSleep)parts.push(`nattsömn oftast "${s.nightSleep.label.toLowerCase()}" (${s.nightSleep.nights} nätter)`);
+  if(s.weight)parts.push(`senaste vikt ${s.weight.latest} g${s.weight.deltaSincePeriodStart!=null?` (${s.weight.deltaSincePeriodStart>=0?'+':''}${s.weight.deltaSincePeriodStart} g)`:''}`);
+  let sumText;
+  if(parts.length){
+    const sentence=`${windowLabel.charAt(0).toUpperCase()+windowLabel.slice(1)}: ${parts.join(', ')}.`;
+    sumText=`<div class="bhv-sumtext"><div id="bhvSumSentence">${esc(sentence)}</div><button class="copy" onclick="copySummary()">📋 Kopiera</button></div>`;
+  } else sumText=`<div class="bhv-empty">Ingen loggdata i perioden ännu.</div>`;
+  const tile=(n,l,span)=>`<div class="stat"${span?' style="grid-column:span 2"':''}><div class="n" style="font-size:1.25rem">${n}</div><div class="l">${l}</div></div>`;
+  let t='';
+  t+=s.feeding?tile(`${s.feeding.perDay}/dygn`,`Amningar · ${s.feeding.avgMinutesPerFeed} min/gång`):tile('–','Amningar (ingen data)');
+  t+=s.diapers?tile(`💧${s.diapers.wetPerDay} 💩${s.diapers.dirtyPerDay}`,'Blöjor/dygn (våta · bajs)'):tile('–','Blöjor (ingen data)');
+  t+=s.naps?tile(`${s.naps.perDay}/dygn`,'Tupplurar'):tile('–','Tupplurar (ingen data)');
+  t+=s.nightSleep?tile(`${sleepState(s.nightSleep.avgRating).e} ${s.nightSleep.label}`,`Nattsömn · ${s.nightSleep.nights} ${s.nightSleep.nights===1?'natt':'nätter'}`):tile('–','Nattsömn (ingen data)');
+  let wt='–',wl='Vikt (ingen data)';
+  if(s.weight){wt=s.weight.latest+' g';wl='Senaste vikt'+(s.weight.deltaSincePeriodStart!=null?` · ${s.weight.deltaSincePeriodStart>=0?'+':''}${s.weight.deltaSincePeriodStart} g i perioden`:'');}
+  t+=tile(wt,wl,true);
+  return `<div class="chart-cap" style="margin:0 2px 8px">Period: ${pf(period.from)}–${pf(period.to)} · ${windowLabel}</div>${sumText}<div class="stat-grid">${t}</div>`;
+}
+function bhvDetailHtml(age,evs,birthDate,now){
+  const s=schedById(age);if(!s)return '<div class="bhv-empty">Okänt besök.</div>';
+  const rec=evs.find(e=>e.type==='visit'&&e.age===age)||transientVisit(s,birthDate);
+  const done=rec.status==='done',skipped=rec.status==='skipped';
+  let html=`<button class="bhv-back" onclick="closeBhvDetail()">‹ Alla besök</button>`;
+  html+=`<h2 style="color:var(--plum);margin:4px 2px 2px">${esc(s.ageLabel)} · ${s.type} ${bhvBadges(s).join(' ')}</h2>`;
+  html+=`<div class="bhv-help" style="margin-top:4px">${done?'Genomfört '+new Date(rec.ts).toLocaleDateString('sv-SE'):skipped?'Överhoppat':bhvWhenLabel(s,birthDate,rec,now)}</div>`;
+  // Bokad tid läggs in manuellt när kallelsen kommit – vi gissar aldrig ett exakt datum.
+  if(!done&&!skipped){
+    const sched=rec.scheduledAt;
+    html+=`<div class="bhv-booking">`;
+    if(sched)html+=`<div class="booked">📅 Bokat: <b>${esc(fmtSched(sched))}</b></div>`;
+    html+=`<div class="field" style="margin:${sched?'8px':'0'} 0 0"><label>${sched?'Ändra bokad tid':'Bokad tid – lägg till när du fått kallelsen'}</label>
+      <input type="datetime-local" id="bhvSched" value="${sched?toLocalInput(sched):''}"></div>
+      <div class="bhv-actions"><button class="bhv-act primary" onclick="saveSchedule('${age}')">Spara tid</button>${sched?`<button class="bhv-act" onclick="clearSchedule('${age}')">Ta bort</button>`:''}</div>
+      </div>`;
+  }
+  if(s.certainty==='regional')html+=`<div class="bhv-note">Tidpunkter och innehåll kan variera mellan regioner — din kallelse från BVC gäller. Aktuell information finns på 1177.</div>`;
+  html+=`<div class="bhv-title">Det här tas ofta upp</div><ul class="bhv-topics">${s.topics.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
+  html+=`<div class="bhv-title">Mina funderingar</div>`;
+  html+=`<div class="prep-add"><input id="bhvPrepInput" placeholder="Lägg till en fråga…" onkeydown="if(event.key==='Enter')addPrep('${age}')"><button onclick="addPrep('${age}')">+</button></div>`;
+  if(rec.prep&&rec.prep.length){
+    html+=rec.prep.map(p=>`<div class="prep-item${p.answered?' answered':''}">
+      <span class="ptext" onclick="togglePrep('${age}','${p.id}')">${esc(p.text)}</span>
+      <button class="px${p.answered?' done':''}" onclick="togglePrep('${age}','${p.id}')" title="${p.answered?'Markera som obesvarad':'Bocka av som besvarad'}" aria-label="${p.answered?'Markera som obesvarad':'Bocka av som besvarad'}">${p.answered?'↺':'✓'}</button>
+      <button class="px" onclick="removePrep('${age}','${p.id}')" title="Ta bort" aria-label="Ta bort">×</button></div>`).join('');
+  } else html+=`<div class="bhv-empty">Inga funderingar än. Skriv ner det du vill fråga om.</div>`;
+  if(s.milestones&&s.milestones.length){
+    const st=msState(rec);
+    html+=`<div class="bhv-title">Milstolpar (samtalsstöd)</div>`;
+    html+=`<div class="bhv-help">Barn utvecklas i olika takt — det här är samtalsunderlag, inte en checklista att klara av. Markera det ni känner igen, eller det du vill ta upp med BVC.</div>`;
+    html+='<div>'+s.milestones.map(m=>{const v=st[m.id];
+      return `<div class="ms-row"><span class="mtext">${esc(m.text)}</span>
+      <div class="ms-opts">
+        <button class="ms-opt yes${v==='yes'?' sel':''}" onclick="setMilestone('${age}','${m.id}','yes')">Ja</button>
+        <button class="ms-opt talk${v==='talk'?' sel':''}" onclick="setMilestone('${age}','${m.id}','talk')">Vill prata om</button>
+      </div></div>`;}).join('')+'</div>';
+  }
+  html+=`<div class="bhv-title">Sammanfattning från loggen</div>`;
+  html+=bhvSummaryHtml(rec,evs,now);
+  // Före besöket visas inte utfallsformuläret – det ligger bakom en knapp så vyn hålls glanceable.
+  if(done||bhvOutcomeOpen){
+    html+=`<div class="bhv-title">${done?'Utfall':'Efter besöket'}</div>`;
+    const oc=rec.outcome||{};
+    html+=`<div class="field"><label>Uppmätt vikt (g)</label><input type="number" id="ocWeight" inputmode="numeric" placeholder="t.ex. 6200" value="${oc.weight!=null?oc.weight:''}"></div>`;
+    html+=`<div class="field"><label>Anteckningar från besöket</label><textarea id="ocNotes" rows="3" placeholder="Vad sa BVC? Vad bestämdes?">${oc.notes?esc(oc.notes):''}</textarea></div>`;
+    html+=`<div class="field"><label>Nästa besök (om bokat)</label><input type="date" id="ocNext" value="${oc.nextVisitAt?new Date(oc.nextVisitAt).toISOString().slice(0,10):''}"></div>`;
+    html+=`<button class="save" onclick="saveOutcome('${age}')">${done?'Spara ändringar':'Spara & markera som genomfört'}</button>`;
+    if(done)html+=`<button class="cancel" onclick="reopenVisit('${age}')">Flytta tillbaka till kommande</button>`;
+  } else if(skipped){
+    html+=`<div class="bhv-title">Efter besöket</div>`;
+    html+=`<div class="bhv-empty">Det här besöket är överhoppat.</div>`;
+    html+=`<button class="bhv-act" style="width:100%" onclick="reopenVisit('${age}')">Flytta tillbaka till kommande</button>`;
+  } else {
+    html+=`<div class="bhv-title">Efter besöket</div>`;
+    html+=`<button class="bhv-act primary" style="width:100%" onclick="revealOutcome()">Vi har varit på besöket</button>`;
+    html+=`<button class="bhv-act" style="width:100%;margin-top:8px" onclick="skipVisit('${age}')">Hoppa över det här besöket</button>`;
+  }
+  return html;
+}
+function openBhv(age){bhvView=age;bhvOutcomeOpen=false;renderBhv();}
+function closeBhvDetail(){bhvView='list';bhvOutcomeOpen=false;renderBhv();}
+function toggleBhvSchedule(){bhvScheduleExpanded=!bhvScheduleExpanded;renderBhv();}
+function revealOutcome(){bhvOutcomeOpen=true;renderBhv();}
+async function copySummary(){
+  const el=document.getElementById('bhvSumSentence');if(!el)return;
+  try{await navigator.clipboard.writeText(el.textContent);toast('Kopierat 📋');}
+  catch(e){toast('Kunde inte kopiera');}
+}
+
+// ---- mutationer (lazyt skapad visit-post i events-storet) ----
+async function bhvMutate(age,fn){
+  const evs=await allEvents();
+  let rec=evs.find(e=>e.type==='visit'&&e.age===age);
+  if(!rec){const s=schedById(age),bd=await getMeta('birthDate');
+    rec={id:uid(),type:'visit',age,ts:bhvTargetTs(s,bd)||Date.now(),scheduledAt:null,status:'upcoming',prep:[],ms:{},outcome:null,createdAt:Date.now()};}
+  if(rec.checked){rec.ms=rec.ms||{};rec.checked.forEach(id=>{if(rec.ms[id]==null)rec.ms[id]='yes';});delete rec.checked;} // migrera gammalt format
+  fn(rec);
+  await put(STORE,rec);
+  renderBhv();
+}
+async function addPrep(age){
+  const inp=document.getElementById('bhvPrepInput');const text=inp?inp.value.trim():'';
+  if(!text){toast('Skriv en fundering först');return;}
+  if(inp)inp.value=''; // töm direkt så fält-restoren inte återfyller den
+  await bhvMutate(age,rec=>{rec.prep=rec.prep||[];rec.prep.push({id:uid(),text,answered:false,createdAt:Date.now()});});
+  toast('Fundering tillagd');
+}
+async function addPrepFromQuick(){
+  const inp=document.getElementById('bhvQuickPrep');const text=inp?inp.value.trim():'';
+  if(!text){toast('Skriv en fundering först');return;}
+  if(inp)inp.value='';
+  const bd=await getMeta('birthDate');const age=childAgeInDays(bd,Date.now());
+  const evs=await allEvents();const closed=new Set(evs.filter(e=>e.type==='visit'&&(e.status==='done'||e.status==='skipped')).map(e=>e.age));
+  const next=BHV_SCHEDULE.filter(s=>!closed.has(s.age)&&s.ageInDays>=(age==null?0:age-21)).sort((a,b)=>a.ageInDays-b.ageInDays)[0];
+  if(!next){toast('Inget kommande besök');return;}
+  await bhvMutate(next.age,rec=>{rec.prep=rec.prep||[];rec.prep.push({id:uid(),text,answered:false,createdAt:Date.now()});});
+  toast('Tillagd inför '+next.ageLabel);
+}
+async function togglePrep(age,pid){await bhvMutate(age,rec=>{const p=(rec.prep||[]).find(x=>x.id===pid);if(p)p.answered=!p.answered;});}
+async function removePrep(age,pid){await bhvMutate(age,rec=>{rec.prep=(rec.prep||[]).filter(x=>x.id!==pid);});}
+async function setMilestone(age,mid,val){await bhvMutate(age,rec=>{rec.ms=rec.ms||{};if(rec.ms[mid]===val)delete rec.ms[mid];else rec.ms[mid]=val;});}
+async function saveSchedule(age){
+  const v=document.getElementById('bhvSched').value;
+  if(!v){toast('Välj en tid först');return;}
+  const ts=new Date(v).getTime();
+  if(isNaN(ts)){toast('Ogiltig tid');return;}
+  await bhvMutate(age,rec=>{rec.scheduledAt=ts;});
+  toast('Bokad tid sparad 📅');
+}
+async function clearSchedule(age){
+  await bhvMutate(age,rec=>{rec.scheduledAt=null;});
+  toast('Bokad tid borttagen');
+}
+async function saveOutcome(age){
+  const wv=document.getElementById('ocWeight').value;
+  const notes=document.getElementById('ocNotes').value.trim();
+  const nx=document.getElementById('ocNext').value;
+  const weight=wv?parseInt(wv,10):null;
+  let nextTs=null;if(nx){const[y,m,d]=nx.split('-').map(Number);nextTs=new Date(y,m-1,d,12).getTime();}
+  await bhvMutate(age,rec=>{
+    rec.outcome={weight:weight!=null&&!isNaN(weight)?weight:null,notes,nextVisitAt:nextTs};
+    if(rec.status!=='done'){rec.status='done';rec.ts=Date.now();}
+  });
+  bhvView='list';bhvOutcomeOpen=false;renderBhv();render();
+  toast('Besök sparat 🩺');
+}
+async function markVisitDone(age){
+  await bhvMutate(age,rec=>{if(rec.status!=='done'){rec.status='done';rec.ts=Date.now();}});
+  bhvView='list';bhvOutcomeOpen=false;renderBhv();render();
+  toast('Markerad som genomförd 🩺');
+}
+async function skipVisit(age){
+  await bhvMutate(age,rec=>{rec.status='skipped';rec.ts=Date.now();});
+  bhvView='list';bhvOutcomeOpen=false;renderBhv();render();
+  toast('Besök överhoppat');
+}
+async function reopenVisit(age){
+  await bhvMutate(age,rec=>{rec.status='upcoming';rec.outcome=rec.outcome||null;});
+  bhvView='list';bhvOutcomeOpen=false;renderBhv();render();
+  toast('Flyttad till kommande');
+}
 
 // ---------- boot ----------
 (async()=>{
