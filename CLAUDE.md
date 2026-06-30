@@ -42,6 +42,7 @@ Testerna körs med **Playwright** mot Chromium i headless-läge (`npm test`).
 - `tests/sleep.test.js` – tupplurar (snabbräkning) och nattsömn (betyg + dagbok)
 - `tests/stats.test.js` – statistik-vyn
 - `tests/settings.test.js` – inställningar och export/import-flödet
+- `tests/bhv.test.js` – BVC-förberedelse: summarizeForVisit, schema, funderingar, milstolpar, utfall
 
 ## Innan du föreslår en PR
 - Kör `npm test` och kontrollera att alla tester är gröna. Föreslå inte en PR om något test
