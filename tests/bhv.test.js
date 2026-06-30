@@ -88,10 +88,11 @@ async function setBirthDate(page, iso) {
   await page.locator('#birthDateInput').dispatchEvent('change');
 }
 
-// barn fött ~6 veckor sedan så att schemat har kommande besök
-function sixWeeksAgoIso() {
+// barn fött 40 dagar sedan: 4-veckorsbesöket är försenat (hjälte med åtgärder),
+// 6-veckorsbesöket är nästa "vanliga" kort under "Därefter".
+function daysAgoIso(n) {
   const d = new Date();
-  d.setDate(d.getDate() - 42);
+  d.setDate(d.getDate() - n);
   return d.toISOString().slice(0, 10);
 }
 
@@ -100,10 +101,17 @@ test('BVC-vyn ber om födelsedatum när det saknas', async ({ page }) => {
   await expect(page.locator('#bhvContent')).toContainText('födelsedatum');
 });
 
-test('lägg till fundering hänger på nästa besök och överlever omladdning', async ({ page }) => {
-  await setBirthDate(page, sixWeeksAgoIso());
+test('nästa besök visas som hjältekort', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
   await page.locator('#nav-bhv').click();
-  await expect(page.locator('.bhv-card')).not.toHaveCount(0);
+  await expect(page.locator('.bhv-hero')).toHaveCount(1);
+  await expect(page.locator('#bhvContent')).toContainText('Därefter');
+});
+
+test('lägg till fundering hänger på nästa besök och överlever omladdning', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
+  await page.locator('#nav-bhv').click();
+  await expect(page.locator('.bhv-hero')).toHaveCount(1);
 
   await page.fill('#bhvQuickPrep', 'Fråga om D-vitamin');
   await page.locator('#bhvQuickPrep + button').click();
@@ -115,26 +123,33 @@ test('lägg till fundering hänger på nästa besök och överlever omladdning',
   await expect(page.locator('#bhvContent')).toContainText('fundering');
 });
 
-test('bocka av milstolpe sparas och överlever omladdning', async ({ page }) => {
-  await setBirthDate(page, sixWeeksAgoIso());
+test('milstolpe-läge (Ja / Vill prata om) sparas och överlever omladdning', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
   await page.locator('#nav-bhv').click();
-  await page.locator('.bhv-card').first().click();
-  await expect(page.locator('.ms-chip')).not.toHaveCount(0);
+  await page.locator('.bhv-card').first().click(); // 6 mån... nej, 6 veckor (Därefter)
+  await expect(page.locator('.ms-opt.yes')).not.toHaveCount(0);
 
-  await page.locator('.ms-chip').first().click();
-  await expect(page.locator('.ms-chip.checked')).toHaveCount(1);
+  await page.locator('.ms-opt.yes').first().click();
+  await page.locator('.ms-opt.talk').nth(1).click();
+  await expect(page.locator('.ms-opt.yes.sel')).toHaveCount(1);
+  await expect(page.locator('.ms-opt.talk.sel')).toHaveCount(1);
 
   await page.reload();
   await page.waitForSelector('#feedList');
   await page.locator('#nav-bhv').click();
   await page.locator('.bhv-card').first().click();
-  await expect(page.locator('.ms-chip.checked')).toHaveCount(1);
+  await expect(page.locator('.ms-opt.yes.sel')).toHaveCount(1);
+  await expect(page.locator('.ms-opt.talk.sel')).toHaveCount(1);
 });
 
-test('spara utfall flyttar besöket till Tidigare', async ({ page }) => {
-  await setBirthDate(page, sixWeeksAgoIso());
+test('utfallsformuläret är dolt tills man markerat besöket', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
   await page.locator('#nav-bhv').click();
   await page.locator('.bhv-card').first().click();
+  await expect(page.locator('#ocWeight')).toBeHidden();
+
+  await page.locator('button:has-text("Vi har varit på besöket")').click();
+  await expect(page.locator('#ocWeight')).toBeVisible();
 
   await page.fill('#ocWeight', '4800');
   await page.fill('#ocNotes', 'Allt såg bra ut');
@@ -144,8 +159,50 @@ test('spara utfall flyttar besöket till Tidigare', async ({ page }) => {
   await expect(page.locator('#bhvContent')).toContainText('Genomfört');
 });
 
+test('försenat besök kan markeras som genomfört direkt från hjältekortet', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
+  await page.locator('#nav-bhv').click();
+  await expect(page.locator('.bhv-hero')).toContainText('Borde redan ha varit');
+
+  await page.locator('button:has-text("Markera som genomförd")').click();
+  await expect(page.locator('#bhvContent')).toContainText('Tidigare');
+  await expect(page.locator('#bhvContent')).toContainText('Genomfört');
+});
+
+test('försenat besök kan hoppas över', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
+  await page.locator('#nav-bhv').click();
+  await page.locator('button:has-text("Hoppa över")').click();
+  await expect(page.locator('#bhvContent')).toContainText('Överhoppat');
+});
+
+test('hela schemat kan fällas ut', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
+  await page.locator('#nav-bhv').click();
+  const before = await page.locator('.bhv-card').count();
+  await page.locator('.bhv-expand').click();
+  await expect(page.locator('.bhv-expand')).toContainText('Dölj'); // vänta in re-rendern
+  const after = await page.locator('.bhv-card').count();
+  expect(after).toBeGreaterThan(before);
+});
+
+test('kopierbar sammanfattningsmening visas med loggdata', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
+  // logga en blöja så perioden har data
+  await page.locator('#nav-home').click();
+  await page.locator('.q').filter({ hasText: 'Blöja' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await page.locator('#nav-bhv').click();
+  await page.locator('.bhv-card').first().click();
+  await expect(page.locator('#bhvSumSentence')).toContainText('blöjor/dygn');
+  await expect(page.locator('.bhv-sumtext .copy')).toBeVisible();
+});
+
 test('export → wipe → import återställer BVC-data', async ({ page }) => {
-  await setBirthDate(page, sixWeeksAgoIso());
+  await setBirthDate(page, daysAgoIso(40));
   await page.locator('#nav-bhv').click();
   await page.fill('#bhvQuickPrep', 'Fråga om sömn');
   await page.locator('#bhvQuickPrep + button').click();
