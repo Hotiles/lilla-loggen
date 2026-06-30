@@ -111,7 +111,7 @@
     background:var(--nav-bg);backdrop-filter:blur(12px);border-top:1px solid var(--line);
     padding:8px 0 calc(8px + env(safe-area-inset-bottom));
   }
-  nav button{border:none;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.65rem;color:var(--plum-soft);cursor:pointer;padding:4px 16px}
+  nav button{border:none;background:transparent;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.64rem;color:var(--plum-soft);cursor:pointer;padding:4px 8px;white-space:nowrap}
   nav button .ni{font-size:1.25rem}
   nav button.active{color:var(--rose-deep)}
 
@@ -180,6 +180,21 @@
   .bhv-card .a{font-weight:600;font-size:.95rem;color:var(--plum)}
   .bhv-card .b{font-size:.76rem;color:var(--plum-soft);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
   .bhv-card .chev{color:var(--plum-soft);font-size:1.1rem;flex-shrink:0}
+  /* föräldrar & SGI */
+  .sgi-trust{font-size:.74rem;color:var(--plum-soft);background:var(--dawn-1);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:16px;display:flex;gap:8px;align-items:flex-start;line-height:1.45}
+  .sgi-sub{font-size:.72rem;color:var(--plum-soft);margin:0 2px 12px;line-height:1.5}
+  .sgi-status{border-radius:16px;padding:14px 16px;margin:6px 0 4px;border:1px solid var(--line);background:var(--card);line-height:1.5}
+  .sgi-status .st-head{font-weight:700;font-size:.95rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;color:var(--plum)}
+  .sgi-status .st-body{font-size:.85rem;color:var(--plum)}
+  .sgi-status.ok{background:rgba(155,191,154,.16);border-color:var(--leaf)}
+  .sgi-status.warn{background:rgba(201,119,106,.12);border-color:var(--rose)}
+  .sgi-status.auto{background:var(--dawn-1);border-style:dashed}
+  .sgi-link{color:var(--rose-deep);font-weight:600;text-decoration:none}
+  .sgi-check{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px;text-decoration:none;color:var(--ink)}
+  .sgi-check .a{font-weight:600;font-size:.9rem;color:var(--plum)}
+  .sgi-check .b{font-size:.76rem;color:var(--plum-soft);margin-top:3px}
+  .sgi-check .chev{margin-left:auto;align-self:center;color:var(--plum-soft);font-size:1.1rem}
+  .sgi-disclaimer{font-size:.74rem;color:var(--plum-soft);line-height:1.55;margin-top:20px;padding-top:14px;border-top:1px solid var(--line)}
   /* nästa besök som tydlig hjälte */
   .bhv-hero{background:var(--card);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:18px 18px 16px;margin-bottom:14px;cursor:pointer;transition:transform .08s}
   .bhv-hero:active{transform:scale(.99)}
@@ -319,6 +334,12 @@
     <div id="bhvContent"></div>
   </section>
 
+  <!-- FÖRÄLDRAR & SGI -->
+  <section class="view" id="view-foraldrar">
+    <h2 style="color:var(--plum)">Föräldrar &amp; SGI</h2>
+    <div id="foraldrarContent"></div>
+  </section>
+
   <!-- INSTÄLLNINGAR -->
   <section class="view" id="view-settings">
     <h2 style="color:var(--plum)">Inställningar</h2>
@@ -378,6 +399,7 @@
   <button class="active" id="nav-home" onclick="show('home')"><span class="ni">🏠</span>Hem</button>
   <button id="nav-stats" onclick="show('stats')"><span class="ni">📊</span>Statistik</button>
   <button id="nav-bhv" onclick="show('bhv')"><span class="ni">🩺</span>BVC</button>
+  <button id="nav-foraldrar" onclick="show('foraldrar')"><span class="ni">👪</span>Föräldrar</button>
   <button id="nav-settings" onclick="show('settings')"><span class="ni">⚙️</span>Inställningar</button>
 </nav>
 
@@ -1147,13 +1169,14 @@ function renderWeightChart(evs,birthDate,birthWeight){
 // ---------- nav ----------
 function show(v){
   currentView=v;
-  ['home','stats','bhv','settings'].forEach(x=>{
+  ['home','stats','bhv','foraldrar','settings'].forEach(x=>{
     document.getElementById('view-'+x).classList.toggle('show',x===v);
     document.getElementById('nav-'+x).classList.toggle('active',x===v);
   });
   updateMini();
   if(v==='settings')updateBackupStatus();
   if(v==='bhv'){bhvView='list';renderBhv();}
+  if(v==='foraldrar')renderForaldrar();
 }
 
 // ---------- name + data ----------
@@ -1167,6 +1190,7 @@ async function collectData(){
     birthDate:await getMeta('birthDate'),
     birthWeight:await getMeta('birthWeight'),
     birthLength:await getMeta('birthLength'),
+    foraldrar:await getMeta('foraldrar'),
     events:await allEvents()};
 }
 async function applyData(d){
@@ -1175,7 +1199,9 @@ async function applyData(d){
   if(d.birthDate!=null)await put(META,{k:'birthDate',v:d.birthDate});
   if(d.birthWeight)await put(META,{k:'birthWeight',v:d.birthWeight});
   if(d.birthLength)await put(META,{k:'birthLength',v:d.birthLength});
+  if(d.foraldrar!=null)await put(META,{k:'foraldrar',v:d.foraldrar});
   render();initName();await initBirthData();await renderBirthStats();
+  if(currentView==='foraldrar')renderForaldrar();
 }
 // Automatisk redundant kopia i en andra lagring (localStorage) på samma telefon.
 // Skyddar mot t.ex. trasig IndexedDB – men ersätter inte exporten utanför enheten.
@@ -1688,6 +1714,93 @@ async function reopenVisit(age){
   await bhvMutate(age,rec=>{rec.status='upcoming';rec.outcome=rec.outcome||null;});
   bhvView='list';bhvOutcomeOpen=false;renderBhv();render();
   toast('Flyttad till kommande');
+}
+
+// ---------- föräldrar & SGI ----------
+// Profil-datan (etiketter, arbetstidsgrad) ligger lokalt i meta['foraldrar'] och följer
+// med export/import. Allt här är VÄGLEDNING – appen ger inga belopp och ersätter inte FK.
+const SGI_FK='https://www.forsakringskassan.se/foralder';
+const SGI_RULES_CHECKED='2026-06'; // när FK-reglerna senast stämdes av (uppdatera vid revidering)
+const SGI_CHECKLIST=[
+  {a:'Anmäl föräldrapenning i tid',b:'Ta ut dagar samma vecka du är ledig – uttaget är det som håller SGI:n uppe.',url:'https://www.forsakringskassan.se/foralder/foraldrapenning'},
+  {a:'Minst 5 dagar/vecka efter ettårsdagen',b:'Är du helt ledig efter att barnet fyllt 1 krävs minst 5 föräldrapenningdagar per vecka.',url:'https://www.forsakringskassan.se/foralder'},
+  {a:'Undvik anställningsglapp',b:'Även en enda dag utan anställning kan nollställa SGI:n.',url:'https://www.forsakringskassan.se/privatperson/sjuk/anstalld/sjukpenninggrundande-inkomst-sgi'},
+  {a:'Kolla SGI-taket och årssiffror',b:'SGI-tak och dagantal ändras varje år – stäm av aktuella siffror.',url:'https://www.forsakringskassan.se/foralder/foraldrapenning'}
+];
+function defaultForaldrar(){
+  return {antal:2,foraldrar:[
+    {id:'p1',etikett:'Förälder 1',arbetstid:''},
+    {id:'p2',etikett:'Förälder 2',arbetstid:''}]};
+}
+function normForaldrar(d){
+  const def=defaultForaldrar();
+  if(!d||!Array.isArray(d.foraldrar))return def;
+  const f=[0,1].map(i=>({
+    id:'p'+(i+1),
+    etikett:(d.foraldrar[i]&&d.foraldrar[i].etikett)||def.foraldrar[i].etikett,
+    arbetstid:(d.foraldrar[i]&&d.foraldrar[i].arbetstid!=null)?d.foraldrar[i].arbetstid:''}));
+  return {antal:d.antal===1?1:2,foraldrar:f};
+}
+let _foraldrar=null;
+async function renderForaldrar(){
+  const el=document.getElementById('foraldrarContent');if(!el)return;
+  const[data,birthDate]=await Promise.all([getMeta('foraldrar'),getMeta('birthDate')]);
+  _foraldrar=normForaldrar(data);
+  el.innerHTML=foraldrarHtml(_foraldrar,birthDate);
+}
+function saveForaldrar(){return put(META,{k:'foraldrar',v:_foraldrar});}
+async function setForaldraAntal(n){_foraldrar.antal=n===1?1:2;await saveForaldrar();renderForaldrar();}
+async function setForaldraFalt(i,falt,val){
+  if(!_foraldrar.foraldrar[i])return;
+  if(falt==='arbetstid')_foraldrar.foraldrar[i].arbetstid=val===''?'':Math.max(0,Math.min(100,parseInt(val,10)||0));
+  else _foraldrar.foraldrar[i].etikett=val;
+  await saveForaldrar();
+  if(falt==='arbetstid')renderForaldrar(); // statusen beror på arbetstidsgraden
+}
+// Vägledande status utifrån barnets ålder + arbetstidsgrad. Medvetet mjuk – pekar mot FK.
+function sgiStatus(birthDate,data){
+  if(!birthDate)return{klass:'auto',ikon:'📅',rubrik:'Lägg till barnets födelsedatum',
+    text:'SGI-vägledningen utgår från barnets ålder. Lägg till födelsedatum under Inställningar → Födelsedata, så visas status här.'};
+  const[y,m,d]=birthDate.split('-').map(Number);
+  const ettar=new Date(y+1,m-1,d);
+  const now=new Date();now.setHours(0,0,0,0);
+  const dagarKvar=Math.round((ettar-now)/864e5);
+  const fmt=ettar.toLocaleDateString('sv-SE');
+  const aktiva=data.foraldrar.slice(0,data.antal);
+  const heltidAlla=aktiva.length>0&&aktiva.every(p=>p.arbetstid!==''&&Number(p.arbetstid)>=100);
+  if(dagarKvar>30)return{klass:'auto',ikon:'🛡️',rubrik:'Auto-skyddad fram till ettårsdagen',
+    text:`Innan barnet fyller 1 år (${fmt}) skyddas SGI:n automatiskt. Efter det behöver du själv hålla den uppe – kom tillbaka hit i god tid.`};
+  if(dagarKvar>=0)return{klass:'warn',ikon:'⏳',rubrik:`Ettårsdagen närmar sig – ${dagarKvar} dagar kvar`,
+    text:'Efter ettårsdagen försvinner det automatiska SGI-skyddet. Är du fortsatt helt ledig behöver du ta ut minst 5 föräldrapenningdagar i veckan. Planera uttaget redan nu.'};
+  if(heltidAlla)return{klass:'ok',ikon:'✅',rubrik:'Sannolikt skyddad via arbete',
+    text:'Ni har angett heltidsarbete – då skyddas SGI:n av anställningen. Tänk på att även en enda dag utan anställning kan nollställa den (anställningsglapp).'};
+  return{klass:'warn',ikon:'⚠️',rubrik:'Barnet är över 1 år – kontrollera ditt SGI-skydd',
+    text:'Är du helt ledig behöver du ta ut minst 5 föräldrapenningdagar i veckan för att hålla SGI:n uppe. Arbetar du deltid måste uttaget fylla gapet upp till heltid. Lägstanivådagar räknas. Bekräfta exakt vad som gäller hos Försäkringskassan.'};
+}
+function attr(s){return esc(s).replace(/"/g,'&quot;');}
+function foraldrarHtml(data,birthDate){
+  const st=sgiStatus(birthDate,data);
+  let h='';
+  h+=`<div class="sgi-trust"><span>🔒</span><span>Lön och föräldrauppgifter sparas <b>bara på den här enheten</b> och skickas aldrig någonstans. De följer med din vanliga export/import.</span></div>`;
+  h+=`<h3 style="color:var(--plum);margin:4px 0 10px;font-size:1rem">Föräldraprofil</h3>`;
+  h+=`<div class="field"><label>Antal föräldrar</label><div class="chip-row">`+
+     `<div class="chip${data.antal===1?' active':''}" onclick="setForaldraAntal(1)">1</div>`+
+     `<div class="chip${data.antal===2?' active':''}" onclick="setForaldraAntal(2)">2</div></div></div>`;
+  for(let i=0;i<data.antal;i++){
+    const p=data.foraldrar[i];
+    h+=`<div class="row">`+
+       `<div class="field" style="flex:2"><label>Etikett</label><input value="${attr(p.etikett)}" onchange="setForaldraFalt(${i},'etikett',this.value)"></div>`+
+       `<div class="field" style="flex:1"><label>Arbetstid %</label><input type="number" inputmode="numeric" min="0" max="100" placeholder="t.ex. 100" value="${p.arbetstid===''?'':attr(String(p.arbetstid))}" onchange="setForaldraFalt(${i},'arbetstid',this.value)"></div>`+
+       `</div>`;
+  }
+  h+=`<p class="sgi-sub">Arbetstidsgraden används bara för att bedöma om uttaget behöver fylla gapet upp till heltid efter ettårsdagen – inte för att räkna ut någon ersättning.</p>`;
+  h+=`<h3 style="color:var(--plum);margin:18px 0 8px;font-size:1rem">Din SGI just nu</h3>`;
+  h+=`<div class="sgi-status ${st.klass}"><div class="st-head">${st.ikon} ${esc(st.rubrik)}</div><div class="st-body">${esc(st.text)} <a class="sgi-link" href="${SGI_FK}" target="_blank" rel="noopener">Läs hos FK ›</a></div></div>`;
+  h+=`<h3 style="color:var(--plum);margin:20px 0 8px;font-size:1rem">Checklista mot Försäkringskassan</h3>`;
+  for(const c of SGI_CHECKLIST)
+    h+=`<a class="sgi-check" href="${c.url}" target="_blank" rel="noopener"><div><div class="a">${esc(c.a)}</div><div class="b">${esc(c.b)}</div></div><span class="chev">›</span></a>`;
+  h+=`<div class="sgi-disclaimer"><b>Vägledning, inte besked.</b> Lilla loggen räknar inte ut belopp och tolkar inte alla undantag (röda dagar, semester på deltid). Reglerna kan ändras årsvis. Bekräfta alltid ditt eget fall på <a class="sgi-link" href="https://www.forsakringskassan.se" target="_blank" rel="noopener">forsakringskassan.se</a>.</div>`;
+  return h;
 }
 
 // ---------- boot ----------
