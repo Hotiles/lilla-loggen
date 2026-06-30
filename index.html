@@ -233,6 +233,10 @@
   body.theme-dark .ms-opt.talk.sel{background:#4a2f2c;color:#e8b5a8;border-color:#6b4540}
   .bhv-sumtext{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;font-size:.86rem;line-height:1.5;color:var(--ink)}
   .bhv-sumtext .copy{margin-top:8px;border:1px solid var(--line);background:var(--dawn-1);border-radius:10px;padding:8px 14px;font-size:.8rem;font-weight:600;color:var(--plum);cursor:pointer;font-family:inherit}
+  .bhv-booking{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:4px 0 14px}
+  .bhv-booking .booked{font-size:.9rem;color:var(--plum)}
+  .bhv-booking .field{margin-bottom:0}
+  .bhv-booking .bhv-actions{margin-top:10px}
   .bhv-empty{color:var(--plum-soft);font-size:.85rem;padding:6px 2px 12px}
 </style>
 </head>
@@ -1385,7 +1389,7 @@ function bhvPeriod(rec,evs,now){
 let bhvView='list',bhvScheduleExpanded=false,bhvOutcomeOpen=false;
 // Full innerHTML-rerender, men bevara text och fokus i ev. öppna fält så att
 // t.ex. en milstolpe-knappning inte raderar en halvskriven fundering.
-const BHV_FIELDS=['bhvPrepInput','bhvQuickPrep','ocWeight','ocNotes','ocNext'];
+const BHV_FIELDS=['bhvPrepInput','bhvQuickPrep','bhvSched','ocWeight','ocNotes','ocNext'];
 function bhvCaptureFields(el){
   const active=document.activeElement;
   const out={focus:active&&BHV_FIELDS.includes(active.id)?active.id:null,sel:null};
@@ -1425,19 +1429,26 @@ function bhvCountBadges(rec){
 }
 function bhvIsOverdue(s,birthDate,rec,now){
   if(rec&&(rec.status==='done'||rec.status==='skipped'))return false;
-  const ts=bhvTargetTs(s,birthDate);
-  return ts!=null&&ts<now;
+  // bokad tid styr om den finns, annars den ungefärliga måldagen
+  const ref=(rec&&rec.scheduledAt)||bhvTargetTs(s,birthDate);
+  return ref!=null&&ref<now;
 }
-function bhvWhenLabel(s,birthDate,now){
+const fmtSched=ts=>new Date(ts).toLocaleString('sv-SE',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+function toLocalInput(ts){const d=new Date(ts),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;}
+// Vi känner inte den exakta tiden – kallelsen från BVC gäller. Därför bara en ungefärlig
+// uppskattning ("om ca 4 veckor") tills föräldern lagt in den bokade tiden manuellt.
+function bhvWhenLabel(s,birthDate,rec,now){
+  if(rec&&rec.scheduledAt){
+    return rec.scheduledAt<now?`Bokad tid passerad · ${fmtSched(rec.scheduledAt)}`:`Bokat ${fmtSched(rec.scheduledAt)}`;
+  }
   const ts=bhvTargetTs(s,birthDate);
   if(!ts)return 'Ungefär vid '+s.ageLabel;
-  const dateStr=new Date(ts).toLocaleDateString('sv-SE',{day:'numeric',month:'short',year:'numeric'});
   const d=Math.round((ts-now)/864e5);
-  if(d<0){const p=-d;if(p<=10)return `Borde ha varit för ${p} ${p===1?'dag':'dagar'} sedan`;return `Borde ha varit ca ${Math.round(p/7)} v sedan · ${dateStr}`;}
-  if(d===0)return `Idag · ${dateStr}`;
-  if(d<=10)return `Om ${d} ${d===1?'dag':'dagar'} · ${dateStr}`;
-  if(d<90){const w=Math.round(d/7);return `Om ca ${w} ${w===1?'vecka':'veckor'} · ${dateStr}`;}
-  return `Om ca ${Math.round(d/30)} mån · ${dateStr}`;
+  if(d<0){const p=-d;return p<=10?'Ungefär nu (tid ej bokad)':`Borde ha varit för ca ${Math.round(p/7)} v sedan`;}
+  if(d===0)return 'Ungefär nu (tid ej bokad)';
+  if(d<=10)return `Om ca ${d} ${d===1?'dag':'dagar'} (tid ej bokad)`;
+  if(d<90){const w=Math.round(d/7);return `Om ca ${w} ${w===1?'vecka':'veckor'} (tid ej bokad)`;}
+  return `Om ca ${Math.round(d/30)} mån (tid ej bokad)`;
 }
 // hjältekort = nästa (eller försenade) besöket
 function bhvHeroHtml(s,rec,birthDate,now){
@@ -1446,7 +1457,7 @@ function bhvHeroHtml(s,rec,birthDate,now){
   let h=`<div class="bhv-hero${overdue?' bhv-overdue':''}" onclick="openBhv('${s.age}')">
     <div class="eyebrow">${overdue?'Borde redan ha varit':'Nästa besök'}</div>
     <div class="htitle">${esc(s.ageLabel)} · ${s.type}</div>
-    <div class="when">${bhvWhenLabel(s,birthDate,now)}</div>
+    <div class="when">${bhvWhenLabel(s,birthDate,rec,now)}</div>
     ${badges.length?`<div class="badges">${badges.join('')}</div>`:''}`;
   if(overdue){
     h+=`<div class="bhv-actions" onclick="event.stopPropagation()">
@@ -1463,7 +1474,7 @@ function bhvCardHtml(s,rec,birthDate,now){
   let when;
   if(status==='done')when='Genomfört '+new Date(rec.ts).toLocaleDateString('sv-SE');
   else if(status==='skipped')when='Överhoppat';
-  else when=bhvWhenLabel(s,birthDate,now);
+  else when=bhvWhenLabel(s,birthDate,rec,now);
   return `<div class="bhv-card" onclick="openBhv('${s.age}')">
     <div class="body"><div class="a">${esc(s.ageLabel)} · ${s.type}</div>
     <div class="b">${when}${badges.map(b=>' '+b).join('')}</div></div>
@@ -1542,7 +1553,17 @@ function bhvDetailHtml(age,evs,birthDate,now){
   const done=rec.status==='done',skipped=rec.status==='skipped';
   let html=`<button class="bhv-back" onclick="closeBhvDetail()">‹ Alla besök</button>`;
   html+=`<h2 style="color:var(--plum);margin:4px 2px 2px">${esc(s.ageLabel)} · ${s.type} ${bhvBadges(s).join(' ')}</h2>`;
-  html+=`<div class="bhv-help" style="margin-top:4px">${done?'Genomfört '+new Date(rec.ts).toLocaleDateString('sv-SE'):skipped?'Överhoppat':bhvWhenLabel(s,birthDate,now)}</div>`;
+  html+=`<div class="bhv-help" style="margin-top:4px">${done?'Genomfört '+new Date(rec.ts).toLocaleDateString('sv-SE'):skipped?'Överhoppat':bhvWhenLabel(s,birthDate,rec,now)}</div>`;
+  // Bokad tid läggs in manuellt när kallelsen kommit – vi gissar aldrig ett exakt datum.
+  if(!done&&!skipped){
+    const sched=rec.scheduledAt;
+    html+=`<div class="bhv-booking">`;
+    if(sched)html+=`<div class="booked">📅 Bokat: <b>${esc(fmtSched(sched))}</b></div>`;
+    html+=`<div class="field" style="margin:${sched?'8px':'0'} 0 0"><label>${sched?'Ändra bokad tid':'Bokad tid – lägg till när du fått kallelsen'}</label>
+      <input type="datetime-local" id="bhvSched" value="${sched?toLocalInput(sched):''}"></div>
+      <div class="bhv-actions"><button class="bhv-act primary" onclick="saveSchedule('${age}')">Spara tid</button>${sched?`<button class="bhv-act" onclick="clearSchedule('${age}')">Ta bort</button>`:''}</div>
+      </div>`;
+  }
   if(s.certainty==='regional')html+=`<div class="bhv-note">Tidpunkter och innehåll kan variera mellan regioner — din kallelse från BVC gäller. Aktuell information finns på 1177.</div>`;
   html+=`<div class="bhv-title">Det här tas ofta upp</div><ul class="bhv-topics">${s.topics.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
   html+=`<div class="bhv-title">Mina funderingar</div>`;
@@ -1628,6 +1649,18 @@ async function addPrepFromQuick(){
 async function togglePrep(age,pid){await bhvMutate(age,rec=>{const p=(rec.prep||[]).find(x=>x.id===pid);if(p)p.answered=!p.answered;});}
 async function removePrep(age,pid){await bhvMutate(age,rec=>{rec.prep=(rec.prep||[]).filter(x=>x.id!==pid);});}
 async function setMilestone(age,mid,val){await bhvMutate(age,rec=>{rec.ms=rec.ms||{};if(rec.ms[mid]===val)delete rec.ms[mid];else rec.ms[mid]=val;});}
+async function saveSchedule(age){
+  const v=document.getElementById('bhvSched').value;
+  if(!v){toast('Välj en tid först');return;}
+  const ts=new Date(v).getTime();
+  if(isNaN(ts)){toast('Ogiltig tid');return;}
+  await bhvMutate(age,rec=>{rec.scheduledAt=ts;});
+  toast('Bokad tid sparad 📅');
+}
+async function clearSchedule(age){
+  await bhvMutate(age,rec=>{rec.scheduledAt=null;});
+  toast('Bokad tid borttagen');
+}
 async function saveOutcome(age){
   const wv=document.getElementById('ocWeight').value;
   const notes=document.getElementById('ocNotes').value.trim();

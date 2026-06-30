@@ -176,6 +176,41 @@ test('försenat besök kan hoppas över', async ({ page }) => {
   await expect(page.locator('#bhvContent')).toContainText('Överhoppat');
 });
 
+test('uppskattad tid är vag tills föräldern bokar – ingen exakt datumgissning', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
+  await page.locator('#nav-bhv').click();
+  // 6-veckorskortet (Därefter) ska visa en vag uppskattning, inte ett exakt datum
+  const card = page.locator('.bhv-card').first();
+  await expect(card).toContainText('tid ej bokad');
+  await expect(card).toContainText('Om ca');
+});
+
+test('parent kan lägga till och ta bort bokad tid manuellt', async ({ page }) => {
+  await setBirthDate(page, daysAgoIso(40));
+  await page.locator('#nav-bhv').click();
+  await page.locator('.bhv-card').first().click(); // 6 veckor
+
+  const future = new Date(Date.now() + 5 * 864e5);
+  const p = (n) => String(n).padStart(2, '0');
+  const val = `${future.getFullYear()}-${p(future.getMonth() + 1)}-${p(future.getDate())}T10:00`;
+  await page.fill('#bhvSched', val);
+  await page.locator('button:has-text("Spara tid")').click();
+  await expect(page.locator('#bhvContent')).toContainText('Bokat');
+
+  // bokad tid syns i listan och överlever omladdning
+  await page.locator('.bhv-back').click();
+  await expect(page.locator('#bhvContent')).toContainText('Bokat');
+  await page.reload();
+  await page.waitForSelector('#feedList');
+  await page.locator('#nav-bhv').click();
+  await expect(page.locator('#bhvContent')).toContainText('Bokat');
+
+  // ta bort tiden -> tillbaka till vag uppskattning
+  await page.locator('.bhv-card').first().click();
+  await page.locator('button:has-text("Ta bort")').click();
+  await expect(page.locator('#bhvContent')).toContainText('tid ej bokad');
+});
+
 test('hela schemat kan fällas ut', async ({ page }) => {
   await setBirthDate(page, daysAgoIso(40));
   await page.locator('#nav-bhv').click();
