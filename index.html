@@ -546,7 +546,7 @@ const fmtSince=ms=>{
 };
 function refreshIdleClock(){
   if(activeFeed||!lastFeedEv)return;
-  document.getElementById('timer').textContent=fmtSince(Date.now()-(lastFeedEv.end||lastFeedEv.ts));
+  document.getElementById('timer').textContent=fmtSince(Date.now()-lastFeedEv.ts);
 }
 function updateMini(){
   document.getElementById('feedMini').style.display=(activeFeed&&currentView!=='home')?'flex':'none';
