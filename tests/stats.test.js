@@ -42,6 +42,14 @@ async function logDiaper(page, type) {
   await page.locator('#sheet').waitFor({ state: 'hidden' });
 }
 
+async function logFormula(page, ml) {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fmVal', String(ml));
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+}
+
 // ── Feed stats ───────────────────────────────────────────────────────────────
 
 test('stats show zeros when no events', async ({ page }) => {
@@ -91,6 +99,17 @@ test('stats count Bajs and Båda as bajsblöjor, not Kiss or Torr', async ({ pag
 
   await expect(page.locator('#statGrid .stat').filter({ hasText: 'Blöjbyten' }).locator('.n')).toHaveText('4');
   await expect(page.locator('#statGrid .stat').filter({ hasText: 'Bajsblöjor' }).locator('.n')).toHaveText('2');
+});
+
+test('stats count formula (ersättning) uses and total ml', async ({ page }) => {
+  await logFormula(page, 90);
+  await logFormula(page, 60);
+
+  await page.locator('#nav-stats').click();
+
+  const tile = page.locator('#statGrid .stat').filter({ hasText: 'Ersättningar' });
+  await expect(tile.locator('.n')).toHaveText('2');
+  await expect(tile.locator('.l')).toContainText('150 ml totalt');
 });
 
 test('diaper breakdown surfaces wet, poop and dry counts', async ({ page }) => {

@@ -117,6 +117,56 @@ test('weight: value in grams is saved and shown in feed', async ({ page }) => {
   await expect(page.locator('#feedList .ev .b').first()).toContainText('4250 g');
 });
 
+// ── Formula (ersättning) ────────────────────────────────────────────────────
+
+test('formula: empty amount is rejected', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Ange mängd i ml');
+  await expect(page.locator('#sheet')).toHaveClass(/show/);
+});
+
+test('formula: amount in ml is saved and shown in feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fmVal', '90');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Ersättning loggad');
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('90 ml');
+});
+
+test('formula: time defaults to now', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+
+  const val = await page.locator('#fmTime').inputValue();
+  expect(val).toMatch(/^\d{2}:\d{2}$/);
+});
+
+test('formula: custom time is reflected in feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fmVal', '120');
+  await page.fill('#fmTime', '03:30');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await expect(page.locator('#feedList .ev .time').first()).toContainText('03:30');
+});
+
+test('formula: note is shown in feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fmVal', '60');
+  await page.fill('#noteV', 'Extra hungrig');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Extra hungrig');
+});
+
 // ── Event management ────────────────────────────────────────────────────────
 
 test('event can be deleted via undo-toast', async ({ page }) => {

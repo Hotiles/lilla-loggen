@@ -283,6 +283,7 @@
 
     <div class="quick">
       <button class="q" onclick="openSheet('diaper')"><span class="ico">🌼</span><span class="t">Blöja</span></button>
+      <button class="q" onclick="openSheet('formula')"><span class="ico">🍼</span><span class="t">Ersättning</span></button>
       <button class="q" onclick="logNap()"><span class="ico">💤</span><span class="t">Tupplur</span></button>
       <button class="q" onclick="openSheet('nightsleep')"><span class="ico">🌙</span><span class="t">Nattsömn</span></button>
       <button class="q" onclick="openSheet('note')"><span class="ico">✏️</span><span class="t">Anteckning</span></button>
@@ -446,8 +447,8 @@ const fmtDur=ms=>{const m=Math.round(ms/60000);if(m<1)return 'under 1 min';if(m<
 const fmtDayKey=ts=>new Date(ts).toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
 const ago=ts=>{const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'nyss';if(m<60)return m+' min sedan';const h=Math.floor(m/60);return h+' h '+(m%60)+' min sedan';};
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️',nap:'💤',nightsleep:'🌙',visit:'🩺'};
-const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc',nap:'#dce6f0',nightsleep:'#e3def0',visit:'#dcebdc'};
+const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️',nap:'💤',nightsleep:'🌙',visit:'🩺',formula:'🍼'};
+const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc',nap:'#dce6f0',nightsleep:'#e3def0',visit:'#dcebdc',formula:'#f4dcc4'};
 // Nattsömnens kvalitet, ordnad 1 (sämst) → 4 (bäst) så snitt/trend funkar.
 const SLEEP_STATES=[{v:4,e:'😴',l:'Lugn natt'},{v:3,e:'🙂',l:'Helt okej'},{v:2,e:'😕',l:'Orolig'},{v:1,e:'😣',l:'Tuff natt'}];
 const sleepState=v=>SLEEP_STATES.find(s=>s.v===Math.round(v))||SLEEP_STATES[1];
@@ -571,6 +572,15 @@ function openSheet(kind){
     chipify('dChips');
     const dn=new Date();
     document.getElementById('dTime').value=`${String(dn.getHours()).padStart(2,'0')}:${String(dn.getMinutes()).padStart(2,'0')}`;
+  } else if(kind==='formula'){
+    c.innerHTML=`<h3>Ersättning</h3>
+      <div class="field"><label>Mängd (ml)</label><input type="number" id="fmVal" inputmode="numeric" placeholder="t.ex. 90"></div>
+      <div class="field"><label>Tid</label><input type="time" id="fmTime"></div>
+      ${noteField()}
+      <button class="save" onclick="saveFormula()">Spara</button>
+      <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
+    const fn=new Date();
+    document.getElementById('fmTime').value=`${String(fn.getHours()).padStart(2,'0')}:${String(fn.getMinutes()).padStart(2,'0')}`;
   } else if(kind==='feed-manual'){
     c.innerHTML=`<h3>Amning i efterhand</h3>
       <div class="field"><label>Sida</label>
@@ -621,16 +631,23 @@ function closeSheet(){document.getElementById('sheet').classList.remove('show');
 async function saveDiaper(){
   const v=document.querySelector('#dChips .chip.active').dataset.v;
   const note=document.getElementById('noteV').value.trim();
-  await put(STORE,{id:uid(),type:'diaper',ts:diaperTs(),val:v,note});
+  await put(STORE,{id:uid(),type:'diaper',ts:timeInputTs(document.getElementById('dTime').value),val:v,note});
   closeSheet();render();toast('Blöja loggad 🌼');
 }
-function diaperTs(){
-  const hm=document.getElementById('dTime').value;
+// "HH:MM" från ett tidsfält → dagens tidsstämpel; vald tid i framtiden tolkas som igår
+function timeInputTs(hm){
   if(!hm)return Date.now();
   const[h,m]=hm.split(':');
   const d=new Date();d.setHours(h,m,0,0);
-  if(d.getTime()>Date.now()+60000)d.setTime(d.getTime()-864e5); // vald tid i framtiden = igår
+  if(d.getTime()>Date.now()+60000)d.setTime(d.getTime()-864e5);
   return d.getTime();
+}
+async function saveFormula(){
+  const val=parseInt(document.getElementById('fmVal').value,10);
+  if(!val){toast('Ange mängd i ml');return;}
+  const note=document.getElementById('noteV').value.trim();
+  await put(STORE,{id:uid(),type:'formula',ts:timeInputTs(document.getElementById('fmTime').value),amountMl:val,note});
+  closeSheet();render();toast('Ersättning loggad 🍼');
 }
 async function saveNote(){
   const note=document.getElementById('noteV').value.trim();
@@ -746,6 +763,7 @@ function evRow(e){
   else if(e.type==='weight'){a='Vikt';b=esc(String(e.val))+' g'+(e.note?' · '+esc(e.note):'');}
   else if(e.type==='nap'){a='Tupplur';b=e.note?esc(e.note):'';}
   else if(e.type==='nightsleep'){const st=sleepState(e.rating);a='Nattsömn';b=`${st.e} ${st.l}`+(e.note?' · '+esc(e.note):'');}
+  else if(e.type==='formula'){a='Ersättning';b=esc(String(e.amountMl))+' ml'+(e.note?' · '+esc(e.note):'');}
   const editFn=e.type==='feed'?`editFeed('${e.id}')`:e.type==='nightsleep'?`editNightSleep('${e.id}')`:`editNote('${e.id}')`;
   const editTitle=e.type==='feed'||e.type==='nightsleep'?'Ändra':'Kommentar';
   const editLabel=e.type==='feed'?'Ändra amning':e.type==='nightsleep'?'Ändra nattsömn':'Lägg till kommentar';
@@ -864,13 +882,16 @@ function renderStats(evs,birthDate,birthWeight){
   const feeds=last.filter(e=>e.type==='feed');
   const diapers=last.filter(e=>e.type==='diaper');
   const naps=last.filter(e=>e.type==='nap');
+  const formulas=last.filter(e=>e.type==='formula');
+  const formulaMl=formulas.reduce((s,e)=>s+(e.amountMl||0),0);
   const avgMin=feeds.length?Math.round(feeds.reduce((s,e)=>s+(e.durMs||0),0)/feeds.length/60000):0;
   document.getElementById('statGrid').innerHTML=`
     <div class="stat"><div class="n">${feeds.length}</div><div class="l">Amningar</div></div>
     <div class="stat"><div class="n">${avgMin} min</div><div class="l">Snitt per amning</div></div>
     <div class="stat"><div class="n">${diapers.length}</div><div class="l">Blöjbyten</div></div>
     <div class="stat"><div class="n">${diapers.filter(d=>d.val==='Bajs'||d.val==='Båda').length}</div><div class="l">Bajsblöjor</div></div>
-    <div class="stat" style="grid-column:span 2"><div class="n">${naps.length}</div><div class="l">Tupplurar</div></div>`;
+    <div class="stat" style="grid-column:span 2"><div class="n">${naps.length}</div><div class="l">Tupplurar</div></div>
+    <div class="stat" style="grid-column:span 2"><div class="n">${formulas.length}</div><div class="l">Ersättningar${formulaMl?` · ${formulaMl} ml totalt`:''}</div></div>`;
   renderDiaperBreakdown(diapers);
   renderRhythm(feeds);
   renderSideBalance(feeds);
