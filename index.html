@@ -453,7 +453,8 @@ const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc',n
 const SLEEP_STATES=[{v:4,e:'😴',l:'Lugn natt'},{v:3,e:'🙂',l:'Helt okej'},{v:2,e:'😕',l:'Orolig'},{v:1,e:'😣',l:'Tuff natt'}];
 const sleepState=v=>SLEEP_STATES.find(s=>s.v===Math.round(v))||SLEEP_STATES[1];
 
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
+let toastTimer=null;
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),1800);}
 
 // ---------- amning (live timer) ----------
 // Den pågående amningen speglas till IndexedDB så att en oavsiktlig omladdning
@@ -1836,23 +1837,46 @@ function foraldrarHtml(data,birthDate){
 })();
 
 // service worker
+// Nya versioner stannar avsiktligt i "waiting"-läge (ingen self.skipWaiting()
+// i sw.js install) tills användaren själv bekräftar via checkUpdate() nedan.
+// Annars kan en ny version tysta ta över sidan i bakgrunden utan att någon
+// någonsin fick frågan om backup – precis det som gjorde knappen opålitlig.
 let swReg=null;
+let reloadingForUpdate=false;
+let checkingUpdate=false;
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('sw.js')
     .then(r=>{swReg=r;})
     .catch(()=>{});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(reloadingForUpdate)window.location.reload();
+  });
+}
+function waitForState(sw,state){
+  return new Promise(res=>{
+    if(sw.state===state){res();return;}
+    sw.addEventListener('statechange',function h(){if(sw.state===state){sw.removeEventListener('statechange',h);res();}});
+  });
 }
 async function checkUpdate(){
   if(!swReg){toast('Service worker ej tillgänglig');return;}
+  if(checkingUpdate)return;
+  if(!navigator.onLine){toast('Ingen internetanslutning – kan inte söka uppdatering');return;}
+  checkingUpdate=true;
   toast('Söker uppdatering…');
-  try{await swReg.update();}catch(e){}
-  const pending=swReg.installing||swReg.waiting;
-  if(pending){waitForSWActivation(pending);return;}
-  swReg.addEventListener('updatefound',()=>waitForSWActivation(swReg.installing),{once:true});
-  setTimeout(()=>{if(!swReg.installing&&!swReg.waiting)toast('Appen är redan aktuell ✓');},2500);
+  try{
+    await swReg.update();
+  }catch(e){
+    checkingUpdate=false;
+    toast('Kunde inte söka uppdatering (offline?)');
+    return;
+  }
+  if(swReg.installing)await waitForState(swReg.installing,'installed');
+  checkingUpdate=false;
+  if(swReg.waiting)await activateUpdate(swReg.waiting);
+  else toast('Appen är redan aktuell ✓');
 }
-async function waitForSWActivation(sw){
-  if(!sw)return;
+async function activateUpdate(waiting){
   toast('Uppdatering hittad');
   // Påminn om att säkra datan innan uppdateringen tillämpas (appen laddas om).
   // Datan ligger bara på den här telefonen – en export är billig försäkring
@@ -1861,9 +1885,8 @@ async function waitForSWActivation(sw){
     try{await exportData();}catch(e){/* avbryt inte uppdateringen om exporten strular */}
   }
   toast('Installerar uppdatering…');
-  const reload=()=>window.location.reload();
-  if(sw.state==='activated'){reload();return;}
-  sw.addEventListener('statechange',()=>{if(sw.state==='activated')reload();});
+  reloadingForUpdate=true;
+  waiting.postMessage('skipWaiting');
 }
 </script>
 </body>
