@@ -273,6 +273,56 @@ test('active feed shows a mini indicator on other tabs', async ({ page }) => {
   await expect(page.locator('#view-home')).toHaveClass(/show/);
 });
 
+test('manual feed: method defaults to Bröst and side is shown in feed', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+
+  await page.fill('#fFrom', '10:00');
+  await page.fill('#fTo', '10:15');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Vänster');
+});
+
+test('manual feed: Flaska can be chosen and shows instead of side', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+
+  await page.locator('#fMethodChips [data-v="flaska"]').click();
+  await page.fill('#fFrom', '10:00');
+  await page.fill('#fTo', '10:15');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Flaska');
+  await expect(page.locator('#feedList .ev .b').first()).not.toContainText('Vänster');
+});
+
+test('a feed started via the live timer is saved with method Bröst', async ({ page }) => {
+  await page.locator('#btnL').click();
+  await page.waitForTimeout(1100);
+  await page.locator('#stopBtn').click();
+
+  const method = await page.evaluate(async () => (await allEvents())[0].method);
+  expect(method).toBe('bröst');
+});
+
+test('editing a feed: method can be changed to Flaska', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fFrom', '10:00');
+  await page.fill('#fTo', '10:10');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await page.locator('#feedList .ev').first().locator('button[title="Ändra"]').click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('#efMethodChips [data-v="flaska"]').click();
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Amning ändrad');
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Flaska');
+});
+
 test('editing a feed: under one minute is rejected', async ({ page }) => {
   await page.locator('#feedRetroBtn').click();
   await page.waitForSelector('#sheet.show');

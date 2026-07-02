@@ -284,6 +284,7 @@
     <div class="quick">
       <button class="q" onclick="openSheet('diaper')"><span class="ico">🌼</span><span class="t">Blöja</span></button>
       <button class="q" onclick="openSheet('formula')"><span class="ico">🍼</span><span class="t">Ersättning</span></button>
+      <button class="q" onclick="openSheet('pump')"><span class="ico">🥛</span><span class="t">Pumpat</span></button>
       <button class="q" onclick="logNap()"><span class="ico">💤</span><span class="t">Tupplur</span></button>
       <button class="q" onclick="openSheet('nightsleep')"><span class="ico">🌙</span><span class="t">Nattsömn</span></button>
       <button class="q" onclick="openSheet('note')"><span class="ico">✏️</span><span class="t">Anteckning</span></button>
@@ -447,8 +448,8 @@ const fmtDur=ms=>{const m=Math.round(ms/60000);if(m<1)return 'under 1 min';if(m<
 const fmtDayKey=ts=>new Date(ts).toLocaleDateString('sv-SE',{weekday:'long',day:'numeric',month:'long'});
 const ago=ts=>{const m=Math.floor((Date.now()-ts)/60000);if(m<1)return 'nyss';if(m<60)return m+' min sedan';const h=Math.floor(m/60);return h+' h '+(m%60)+' min sedan';};
 const esc=s=>s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️',nap:'💤',nightsleep:'🌙',visit:'🩺',formula:'🍼'};
-const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc',nap:'#dce6f0',nightsleep:'#e3def0',visit:'#dcebdc',formula:'#f4dcc4'};
+const META_ICON={feed:'🤱',diaper:'🌼',note:'✏️',weight:'⚖️',nap:'💤',nightsleep:'🌙',visit:'🩺',formula:'🍼',pump:'🥛'};
+const META_BG={feed:'#f6e2cf',diaper:'#fdf2c9',note:'#eee3ef',weight:'#dcebdc',nap:'#dce6f0',nightsleep:'#e3def0',visit:'#dcebdc',formula:'#f4dcc4',pump:'#d6e6ee'};
 // Nattsömnens kvalitet, ordnad 1 (sämst) → 4 (bäst) så snitt/trend funkar.
 const SLEEP_STATES=[{v:4,e:'😴',l:'Lugn natt'},{v:3,e:'🙂',l:'Helt okej'},{v:2,e:'😕',l:'Orolig'},{v:1,e:'😣',l:'Tuff natt'}];
 const sleepState=v=>SLEEP_STATES.find(s=>s.v===Math.round(v))||SLEEP_STATES[1];
@@ -497,7 +498,7 @@ async function stopFeed(){
   if(!activeFeed)return;
   clearInterval(tickInt);
   const now=Date.now();
-  const ev={...activeFeed,type:'feed',ts:activeFeed.start,end:now,durMs:now-activeFeed.start};
+  const ev={...activeFeed,type:'feed',ts:activeFeed.start,end:now,durMs:now-activeFeed.start,method:'bröst'};
   delete ev.start;
   await put(STORE,ev);
   await clearActiveFeed();
@@ -592,6 +593,11 @@ function openSheet(kind){
     document.getElementById('fmTime').value=`${String(fn.getHours()).padStart(2,'0')}:${String(fn.getMinutes()).padStart(2,'0')}`;
   } else if(kind==='feed-manual'){
     c.innerHTML=`<h3>Amning i efterhand</h3>
+      <div class="field"><label>Metod</label>
+        <div class="chip-row" id="fMethodChips">
+          <div class="chip active" data-v="bröst">Bröst</div>
+          <div class="chip" data-v="flaska">Flaska</div>
+        </div></div>
       <div class="field"><label>Sida</label>
         <div class="chip-row" id="fChips">
           <div class="chip active" data-v="Vänster">Vänster</div>
@@ -606,12 +612,32 @@ function openSheet(kind){
       ${noteField()}
       <button class="save" onclick="saveManualFeed()">Spara</button>
       <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
-    chipify('fChips');
+    chipify('fMethodChips');chipify('fChips');
     const now=new Date(),from30=new Date(now-30*60000);
     const hm=d=>`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     document.getElementById('fDate').value=toDateInput(from30);
     document.getElementById('fFrom').value=hm(from30);
     document.getElementById('fTo').value=hm(now);
+  } else if(kind==='pump'){
+    c.innerHTML=`<h3>Pumpat</h3>
+      <div class="field"><label>Bröst</label>
+        <div class="chip-row" id="pChips">
+          <div class="chip active" data-v="Vänster">Vänster</div>
+          <div class="chip" data-v="Höger">Höger</div>
+          <div class="chip" data-v="Båda">Båda</div>
+        </div></div>
+      <div class="field"><label>Mängd (ml)</label><input type="number" id="pVal" inputmode="numeric" placeholder="t.ex. 60"></div>
+      <div class="row">
+        <div class="field" style="flex:1"><label>Datum</label><input type="date" id="pDate" max="${toDateInput(new Date())}"></div>
+        <div class="field" style="flex:1"><label>Tid</label><input type="time" id="pTime"></div>
+      </div>
+      ${noteField()}
+      <button class="save" onclick="savePump()">Spara</button>
+      <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
+    chipify('pChips');
+    const pn=new Date();
+    document.getElementById('pDate').value=toDateInput(pn);
+    document.getElementById('pTime').value=`${String(pn.getHours()).padStart(2,'0')}:${String(pn.getMinutes()).padStart(2,'0')}`;
   } else if(kind==='nightsleep'){
     c.innerHTML=`<h3>Nattsömn</h3>
       <div class="field"><label>Hur var natten?</label>
@@ -681,6 +707,7 @@ async function saveNightSleep(){
 async function saveManualFeed(){
   const f=document.getElementById('fFrom').value,t=document.getElementById('fTo').value;
   if(!f||!t){toast('Fyll i båda tiderna');return;}
+  const method=document.querySelector('#fMethodChips .chip.active').dataset.v;
   const side=document.querySelector('#fChips .chip.active').dataset.v;
   const note=document.getElementById('noteV').value.trim();
   const dateStr=document.getElementById('fDate').value;
@@ -688,8 +715,17 @@ async function saveManualFeed(){
   if(to<from)to+=864e5; // slutade efter midnatt
   const durMs=to-from;
   if(durMs<60000){toast('Starttid och sluttid kan inte vara samma');return;}
-  await put(STORE,{id:uid(),type:'feed',ts:from,end:to,durMs,side,note});
+  await put(STORE,{id:uid(),type:'feed',ts:from,end:to,durMs,side,method,note});
   closeSheet();render();toast('Amning sparad 🤱');
+}
+async function savePump(){
+  const val=parseInt(document.getElementById('pVal').value,10);
+  if(!val){toast('Ange mängd i ml');return;}
+  const side=document.querySelector('#pChips .chip.active').dataset.v;
+  const note=document.getElementById('noteV').value.trim();
+  const ts=combineDateTime(document.getElementById('pDate').value,document.getElementById('pTime').value);
+  await put(STORE,{id:uid(),type:'pump',ts,side,amountMl:val,note});
+  closeSheet();render();toast('Pumpning loggad 🥛');
 }
 async function saveWeight(){
   const val=parseInt(document.getElementById('wVal').value,10);
@@ -769,13 +805,14 @@ async function render(){
 }
 function evRow(e){
   let a='',b='';
-  if(e.type==='feed'){a='Amning';b=`${esc(e.side)||''} · ${fmtClock(e.durMs||0)}`+(e.note?' · '+esc(e.note):'');}
+  if(e.type==='feed'){a='Amning';const methodTxt=e.method==='flaska'?'Flaska':(esc(e.side)||'');b=`${methodTxt} · ${fmtClock(e.durMs||0)}`+(e.note?' · '+esc(e.note):'');}
   else if(e.type==='diaper'){a='Blöja';b=esc(e.val)+(e.note?' · '+esc(e.note):'');}
   else if(e.type==='note'){a='Anteckning';b=esc(e.note);}
   else if(e.type==='weight'){a='Vikt';b=esc(String(e.val))+' g'+(e.note?' · '+esc(e.note):'');}
   else if(e.type==='nap'){a='Tupplur';b=e.note?esc(e.note):'';}
   else if(e.type==='nightsleep'){const st=sleepState(e.rating);a='Nattsömn';b=`${st.e} ${st.l}`+(e.note?' · '+esc(e.note):'');}
   else if(e.type==='formula'){a='Ersättning';b=esc(String(e.amountMl))+' ml'+(e.note?' · '+esc(e.note):'');}
+  else if(e.type==='pump'){a='Pumpat';b=esc(e.side)+' · '+esc(String(e.amountMl))+' ml'+(e.note?' · '+esc(e.note):'');}
   const editFn=e.type==='feed'?`editFeed('${e.id}')`:e.type==='nightsleep'?`editNightSleep('${e.id}')`:`editNote('${e.id}')`;
   const editTitle=e.type==='feed'||e.type==='nightsleep'?'Ändra':'Kommentar';
   const editLabel=e.type==='feed'?'Ändra amning':e.type==='nightsleep'?'Ändra nattsömn':'Lägg till kommentar';
@@ -843,8 +880,14 @@ async function saveEditNightSleep(id){
 async function editFeed(id){
   const ev=await getEvent(id);if(!ev)return;
   const side=ev.side||'';
+  const method=ev.method==='flaska'?'flaska':'bröst';
   const c=document.getElementById('sheetCard');
   c.innerHTML=`<h3>Ändra amning</h3>
+    <div class="field"><label>Metod</label>
+      <div class="chip-row" id="efMethodChips">
+        <div class="chip${method==='bröst'?' active':''}" data-v="bröst">Bröst</div>
+        <div class="chip${method==='flaska'?' active':''}" data-v="flaska">Flaska</div>
+      </div></div>
     <div class="field"><label>Sida</label>
       <div class="chip-row" id="efChips">
         <div class="chip${side==='Vänster'?' active':''}" data-v="Vänster">Vänster</div>
@@ -859,7 +902,7 @@ async function editFeed(id){
     ${noteField()}
     <button class="save" onclick="saveEditFeed('${id}')">Spara</button>
     <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
-  chipify('efChips');
+  chipify('efMethodChips');chipify('efChips');
   const hm=t=>{const d=new Date(t);return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;};
   document.getElementById('efDate').value=toDateInput(new Date(ev.ts));
   document.getElementById('efFrom').value=hm(ev.ts);
@@ -871,6 +914,7 @@ async function saveEditFeed(id){
   const ev=await getEvent(id);if(!ev)return;
   const f=document.getElementById('efFrom').value,t=document.getElementById('efTo').value;
   if(!f||!t){toast('Fyll i båda tiderna');return;}
+  const method=document.querySelector('#efMethodChips .chip.active').dataset.v;
   const side=document.querySelector('#efChips .chip.active').dataset.v;
   const note=document.getElementById('noteV').value.trim();
   const dateStr=document.getElementById('efDate').value;
@@ -878,7 +922,7 @@ async function saveEditFeed(id){
   if(to<from)to+=864e5; // slutade nästa dag
   const durMs=to-from;
   if(durMs<60000){toast('Starttid och sluttid kan inte vara samma');return;}
-  await put(STORE,{...ev,ts:from,end:to,durMs,side,note});
+  await put(STORE,{...ev,ts:from,end:to,durMs,side,method,note});
   closeSheet();render();toast('Amning ändrad 🤱');
 }
 
@@ -897,6 +941,8 @@ function renderStats(evs,birthDate,birthWeight){
   const naps=last.filter(e=>e.type==='nap');
   const formulas=last.filter(e=>e.type==='formula');
   const formulaMl=formulas.reduce((s,e)=>s+(e.amountMl||0),0);
+  const pumps=last.filter(e=>e.type==='pump');
+  const pumpMl=pumps.reduce((s,e)=>s+(e.amountMl||0),0);
   const avgMin=feeds.length?Math.round(feeds.reduce((s,e)=>s+(e.durMs||0),0)/feeds.length/60000):0;
   document.getElementById('statGrid').innerHTML=`
     <div class="stat"><div class="n">${feeds.length}</div><div class="l">Amningar</div></div>
@@ -904,7 +950,8 @@ function renderStats(evs,birthDate,birthWeight){
     <div class="stat"><div class="n">${diapers.length}</div><div class="l">Blöjbyten</div></div>
     <div class="stat"><div class="n">${diapers.filter(d=>d.val==='Bajs'||d.val==='Båda').length}</div><div class="l">Bajsblöjor</div></div>
     <div class="stat" style="grid-column:span 2"><div class="n">${naps.length}</div><div class="l">Tupplurar</div></div>
-    <div class="stat" style="grid-column:span 2"><div class="n">${formulas.length}</div><div class="l">Ersättningar${formulaMl?` · ${formulaMl} ml totalt`:''}</div></div>`;
+    <div class="stat" style="grid-column:span 2"><div class="n">${formulas.length}</div><div class="l">Ersättningar${formulaMl?` · ${formulaMl} ml totalt`:''}</div></div>
+    <div class="stat" style="grid-column:span 2"><div class="n">${pumps.length}</div><div class="l">Pumpningar${pumpMl?` · ${pumpMl} ml totalt`:''}</div></div>`;
   renderDiaperBreakdown(diapers);
   renderRhythm(feeds);
   renderSideBalance(feeds);

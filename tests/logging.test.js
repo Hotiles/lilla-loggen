@@ -199,6 +199,82 @@ test('formula: note is shown in feed', async ({ page }) => {
   await expect(page.locator('#feedList .ev .b').first()).toContainText('Extra hungrig');
 });
 
+// ── Pump (pumpat) ───────────────────────────────────────────────────────────
+
+test('pump: empty amount is rejected', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Pumpat' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Ange mängd i ml');
+  await expect(page.locator('#sheet')).toHaveClass(/show/);
+});
+
+test('pump: side and amount in ml are saved and shown in feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Pumpat' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('[data-v="Höger"]').click();
+  await page.fill('#pVal', '70');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Pumpning loggad');
+  await expect(page.locator('#feedList .ev .a').first()).toHaveText('Pumpat');
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Höger');
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('70 ml');
+});
+
+test('pump: side defaults to Vänster', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Pumpat' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#pVal', '50');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Vänster');
+});
+
+test('pump: Båda can be selected', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Pumpat' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('[data-v="Båda"]').click();
+  await page.fill('#pVal', '120');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Båda');
+});
+
+test('pump: time defaults to now', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Pumpat' }).click();
+  await page.waitForSelector('#sheet.show');
+
+  const val = await page.locator('#pTime').inputValue();
+  expect(val).toMatch(/^\d{2}:\d{2}$/);
+});
+
+test('pump: a past date can be chosen', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Pumpat' }).click();
+  await page.waitForSelector('#sheet.show');
+
+  const twoDaysAgo = await page.evaluate(() => toDateInput(new Date(Date.now() - 2 * 864e5)));
+  await page.fill('#pVal', '80');
+  await page.fill('#pDate', twoDaysAgo);
+  await page.fill('#pTime', '02:00');
+  await page.locator('.save').click();
+
+  const ts = await page.evaluate(async () => (await allEvents())[0].ts);
+  const saved = await page.evaluate((t) => toDateInput(new Date(t)), ts);
+  expect(saved).toBe(twoDaysAgo);
+});
+
+test('pump: note is shown in feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Pumpat' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#pVal', '40');
+  await page.fill('#noteV', 'Efter frukost');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Efter frukost');
+});
+
 // ── Event management ────────────────────────────────────────────────────────
 
 test('event can be deleted via undo-toast', async ({ page }) => {
