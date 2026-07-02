@@ -55,6 +55,23 @@ test('diaper: custom time is reflected in feed', async ({ page }) => {
   await expect(page.locator('#feedList .ev .time').first()).toContainText('07:15');
 });
 
+test('diaper: date defaults to today and a past date can be chosen', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Blöja' }).click();
+  await page.waitForSelector('#sheet.show');
+
+  const today = await page.evaluate(() => toDateInput(new Date()));
+  await expect(page.locator('#dDate')).toHaveValue(today);
+
+  const yesterday = await page.evaluate(() => toDateInput(new Date(Date.now() - 864e5)));
+  await page.fill('#dDate', yesterday);
+  await page.fill('#dTime', '23:50');
+  await page.locator('.save').click();
+
+  const ts = await page.evaluate(async () => (await allEvents())[0].ts);
+  const saved = await page.evaluate((t) => toDateInput(new Date(t)), ts);
+  expect(saved).toBe(yesterday);
+});
+
 test('diaper: note is shown in feed', async ({ page }) => {
   await page.locator('.q').filter({ hasText: 'Blöja' }).click();
   await page.waitForSelector('#sheet.show');
@@ -155,6 +172,21 @@ test('formula: custom time is reflected in feed', async ({ page }) => {
   await page.locator('#sheet').waitFor({ state: 'hidden' });
 
   await expect(page.locator('#feedList .ev .time').first()).toContainText('03:30');
+});
+
+test('formula: a past date can be chosen', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+
+  const twoDaysAgo = await page.evaluate(() => toDateInput(new Date(Date.now() - 2 * 864e5)));
+  await page.fill('#fmVal', '100');
+  await page.fill('#fmDate', twoDaysAgo);
+  await page.fill('#fmTime', '02:00');
+  await page.locator('.save').click();
+
+  const ts = await page.evaluate(async () => (await allEvents())[0].ts);
+  const saved = await page.evaluate((t) => toDateInput(new Date(t)), ts);
+  expect(saved).toBe(twoDaysAgo);
 });
 
 test('formula: note is shown in feed', async ({ page }) => {
