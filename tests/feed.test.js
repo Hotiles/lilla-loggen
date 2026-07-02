@@ -107,6 +107,30 @@ test('manual feed overnight: crossing midnight gives correct duration', async ({
   await expect(page.locator('#feedList .ev .b').first()).toContainText('20:00');
 });
 
+test('manual feed: a past date can be chosen and is used for the timestamp', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+
+  const yesterday = await page.evaluate(() => toDateInput(new Date(Date.now() - 864e5)));
+  await page.fill('#fDate', yesterday);
+  await page.fill('#fFrom', '20:00');
+  await page.fill('#fTo', '20:20');
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Amning sparad');
+  const ts = await page.evaluate(async () => (await allEvents())[0].ts);
+  const saved = await page.evaluate((t) => toDateInput(new Date(t)), ts);
+  expect(saved).toBe(yesterday);
+});
+
+test('manual feed: date defaults to today', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+
+  const today = await page.evaluate(() => toDateInput(new Date()));
+  await expect(page.locator('#fDate')).toHaveValue(today);
+});
+
 test('manual feed: under one minute duration is rejected', async ({ page }) => {
   await page.locator('#feedRetroBtn').click();
   await page.waitForSelector('#sheet.show');
@@ -190,6 +214,26 @@ test('editing a logged feed updates its duration', async ({ page }) => {
 
   await expect(page.locator('#toast')).toContainText('Amning ändrad');
   await expect(page.locator('#feedList .ev .b').first()).toContainText('25:00');
+});
+
+test('editing a logged feed can move it to an earlier date', async ({ page }) => {
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fFrom', '10:00');
+  await page.fill('#fTo', '10:10');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await page.locator('#feedList .ev').first().locator('button[title="Ändra"]').click();
+  await page.waitForSelector('#sheet.show');
+  const twoDaysAgo = await page.evaluate(() => toDateInput(new Date(Date.now() - 2 * 864e5)));
+  await page.fill('#efDate', twoDaysAgo);
+  await page.locator('.save').click();
+
+  await expect(page.locator('#toast')).toContainText('Amning ändrad');
+  const ts = await page.evaluate(async () => (await allEvents())[0].ts);
+  const saved = await page.evaluate((t) => toDateInput(new Date(t)), ts);
+  expect(saved).toBe(twoDaysAgo);
 });
 
 test('an active feed survives a reload', async ({ page }) => {
