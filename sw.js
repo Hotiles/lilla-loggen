@@ -1,4 +1,4 @@
-const CACHE='lillaloggen-v24';
+const CACHE='lillaloggen-v25';
 const ASSETS=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./icon-180.png'];
 // Ingen automatisk self.skipWaiting() här – en ny version ska stanna i
 // "waiting"-läge tills appen (checkUpdate) explicit ber om aktivering via
