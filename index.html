@@ -526,18 +526,18 @@ function renderFeedUI(){
       // Vilonläge med tidigare matning: stora siffran = tid sedan senaste matning.
       t.classList.remove('idle');
       refreshIdleClock();
+      // Föreslå motsatt bröst mot senaste bröstamningen – även om det gavs en
+      // flaska däremellan, så man vet vilken sida som står på tur.
+      const next=lastFeedSide==='Vänster'?'Höger':lastFeedSide==='Höger'?'Vänster':null;
+      if(next==='Vänster')bl.classList.add('suggest');
+      else if(next==='Höger')br.classList.add('suggest');
+      tag.textContent=next?('Nästa: '+next):'';
       if(lastFeedEv.type==='formula'){
-        // Senaste matningen var en flaska – inget sidbyte att föreslå.
         lbl.textContent='Sedan senaste matning';
-        tag.textContent='';
         const km=lastFeedEv.kind==='bröstmjölk'?'Utpumpad bröstmjölk':'Ersättning';
         last.textContent=`Föregående · ${km} · ${lastFeedEv.amountMl||0} ml`;
       } else {
         lbl.textContent='Sedan senaste amning';
-        const next=lastFeedSide==='Vänster'?'Höger':lastFeedSide==='Höger'?'Vänster':null;
-        if(next==='Vänster')bl.classList.add('suggest');
-        else if(next==='Höger')br.classList.add('suggest');
-        tag.textContent=next?('Nästa: '+next):'';
         last.textContent=`Föregående amning · ${lastFeedEv.side||'okänd sida'} · ${fmtDur(lastFeedEv.durMs||0)}`;
       }
     } else {
@@ -803,7 +803,10 @@ async function render(){
   // Pumpning räknas inte – det matar inte barnet. En flaska nollställer klockan
   // precis som en amning, så "Sedan senaste matning" blir rätt även med ersättning.
   lastFeedEv=evs.find(e=>e.type==='feed'||e.type==='formula')||null;
-  lastFeedSide=lastFeedEv?lastFeedEv.side:null;
+  // Sidbytesförslaget följer den senaste riktiga bröstamningen – en flaska
+  // däremellan ska inte glömma vilken sida som stod på tur.
+  const lastBreastEv=evs.find(e=>e.type==='feed');
+  lastFeedSide=lastBreastEv?lastBreastEv.side:null;
   renderFeedUI();
   // feed list grouped by day – BVC-besök (type:'visit') hör hemma i BVC-vyn, inte i flödet
   const logEvs=evs.filter(e=>e.type!=='visit');
