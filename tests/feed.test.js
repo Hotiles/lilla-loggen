@@ -262,6 +262,27 @@ test('idle hero suggests the opposite breast after a feed', async ({ page }) => 
   await expect(page.locator('#sideTag')).toContainText('Höger');
 });
 
+test('idle hero still suggests the opposite breast after a bottle in between', async ({ page }) => {
+  // Senaste bröstamningen var vänster ...
+  await page.locator('#feedRetroBtn').click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fFrom', '10:00');
+  await page.fill('#fTo', '10:15'); // default side is Vänster
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  // ... sedan gavs en flaska. Klockan följer flaskan, men sidförslaget minns bröstet.
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fmVal', '90');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  await expect(page.locator('#heroLabel')).toHaveText('Sedan senaste matning');
+  await expect(page.locator('#btnR')).toHaveClass(/suggest/);
+  await expect(page.locator('#sideTag')).toContainText('Höger');
+});
+
 test('idle hero clock counts from the feed end, not the start', async ({ page }) => {
   // Amning som startade för 70 min sedan och slutade för 30 min sedan.
   // Från start = "Ca 1 tim", från slut = "Ca 30 min" – hinkarna skiljer sig åt.
