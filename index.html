@@ -523,14 +523,23 @@ function renderFeedUI(){
     stop.style.display='none';
     document.getElementById('adjustRow').style.display='none';
     if(lastFeedEv){
-      // Vilonläge med tidigare amning: stora siffran = tid sedan senaste amning.
-      t.classList.remove('idle');lbl.textContent='Sedan senaste amning';
+      // Vilonläge med tidigare matning: stora siffran = tid sedan senaste matning.
+      t.classList.remove('idle');
       refreshIdleClock();
-      const next=lastFeedSide==='Vänster'?'Höger':lastFeedSide==='Höger'?'Vänster':null;
-      if(next==='Vänster')bl.classList.add('suggest');
-      else if(next==='Höger')br.classList.add('suggest');
-      tag.textContent=next?('Nästa: '+next):'';
-      last.textContent=`Föregående amning · ${lastFeedEv.side||'okänd sida'} · ${fmtDur(lastFeedEv.durMs||0)}`;
+      if(lastFeedEv.type==='formula'){
+        // Senaste matningen var en flaska – inget sidbyte att föreslå.
+        lbl.textContent='Sedan senaste matning';
+        tag.textContent='';
+        const km=lastFeedEv.kind==='bröstmjölk'?'Utpumpad bröstmjölk':'Ersättning';
+        last.textContent=`Föregående · ${km} · ${lastFeedEv.amountMl||0} ml`;
+      } else {
+        lbl.textContent='Sedan senaste amning';
+        const next=lastFeedSide==='Vänster'?'Höger':lastFeedSide==='Höger'?'Vänster':null;
+        if(next==='Vänster')bl.classList.add('suggest');
+        else if(next==='Höger')br.classList.add('suggest');
+        tag.textContent=next?('Nästa: '+next):'';
+        last.textContent=`Föregående amning · ${lastFeedEv.side||'okänd sida'} · ${fmtDur(lastFeedEv.durMs||0)}`;
+      }
     } else {
       t.classList.add('idle');t.textContent='––:––';lbl.textContent='Senaste amning';
       tag.textContent='';last.textContent='Ingen amning loggad än';
@@ -549,7 +558,9 @@ const fmtSince=ms=>{
 };
 function refreshIdleClock(){
   if(activeFeed||!lastFeedEv)return;
-  document.getElementById('timer').textContent=fmtSince(Date.now()-lastFeedEv.ts);
+  // Räkna från när matningen slutade. Amningar har end; ersättning loggas som en
+  // punkt (ts = när flaskan gavs klart), så ts fungerar som "slut" för dem.
+  document.getElementById('timer').textContent=fmtSince(Date.now()-(lastFeedEv.end||lastFeedEv.ts));
 }
 function updateMini(){
   document.getElementById('feedMini').style.display=(activeFeed&&currentView!=='home')?'flex':'none';
@@ -580,6 +591,11 @@ function openSheet(kind){
     document.getElementById('dTime').value=`${String(dn.getHours()).padStart(2,'0')}:${String(dn.getMinutes()).padStart(2,'0')}`;
   } else if(kind==='formula'){
     c.innerHTML=`<h3>Ersättning</h3>
+      <div class="field"><label>Typ</label>
+        <div class="chip-row" id="fmTypeChips">
+          <div class="chip active" data-v="formula">🍼 Modersmjölksersättning</div>
+          <div class="chip" data-v="bröstmjölk">🥛 Utpumpad bröstmjölk</div>
+        </div></div>
       <div class="field"><label>Mängd (ml)</label><input type="number" id="fmVal" inputmode="numeric" placeholder="t.ex. 90"></div>
       <div class="row">
         <div class="field" style="flex:1"><label>Datum</label><input type="date" id="fmDate" max="${toDateInput(new Date())}"></div>
@@ -588,6 +604,7 @@ function openSheet(kind){
       ${noteField()}
       <button class="save" onclick="saveFormula()">Spara</button>
       <button class="cancel" onclick="closeSheet()">Avbryt</button>`;
+    chipify('fmTypeChips');
     const fn=new Date();
     document.getElementById('fmDate').value=toDateInput(fn);
     document.getElementById('fmTime').value=`${String(fn.getHours()).padStart(2,'0')}:${String(fn.getMinutes()).padStart(2,'0')}`;
@@ -683,9 +700,10 @@ async function saveDiaper(){
 async function saveFormula(){
   const val=parseInt(document.getElementById('fmVal').value,10);
   if(!val){toast('Ange mängd i ml');return;}
+  const kind=document.querySelector('#fmTypeChips .chip.active').dataset.v;
   const note=document.getElementById('noteV').value.trim();
   const ts=combineDateTime(document.getElementById('fmDate').value,document.getElementById('fmTime').value);
-  await put(STORE,{id:uid(),type:'formula',ts,amountMl:val,note});
+  await put(STORE,{id:uid(),type:'formula',kind,ts,amountMl:val,note});
   closeSheet();render();toast('Ersättning loggad 🍼');
 }
 async function saveNote(){
@@ -781,8 +799,10 @@ async function renderBirthStats(){
 // ---------- render feed + stats ----------
 async function render(){
   const evs=(await allEvents()).sort((a,b)=>b.ts-a.ts);
-  // senaste amningen driver vilolägets hjälte + förslag på nästa sida
-  lastFeedEv=evs.find(e=>e.type==='feed')||null;
+  // senaste matningen (amning ELLER ersättning) driver vilolägets hjälte.
+  // Pumpning räknas inte – det matar inte barnet. En flaska nollställer klockan
+  // precis som en amning, så "Sedan senaste matning" blir rätt även med ersättning.
+  lastFeedEv=evs.find(e=>e.type==='feed'||e.type==='formula')||null;
   lastFeedSide=lastFeedEv?lastFeedEv.side:null;
   renderFeedUI();
   // feed list grouped by day – BVC-besök (type:'visit') hör hemma i BVC-vyn, inte i flödet
@@ -811,7 +831,7 @@ function evRow(e){
   else if(e.type==='weight'){a='Vikt';b=esc(String(e.val))+' g'+(e.note?' · '+esc(e.note):'');}
   else if(e.type==='nap'){a='Tupplur';b=e.note?esc(e.note):'';}
   else if(e.type==='nightsleep'){const st=sleepState(e.rating);a='Nattsömn';b=`${st.e} ${st.l}`+(e.note?' · '+esc(e.note):'');}
-  else if(e.type==='formula'){a='Ersättning';b=esc(String(e.amountMl))+' ml'+(e.note?' · '+esc(e.note):'');}
+  else if(e.type==='formula'){a='Ersättning';const kt=e.kind==='bröstmjölk'?'Utpumpad bröstmjölk · ':'';b=kt+esc(String(e.amountMl))+' ml'+(e.note?' · '+esc(e.note):'');}
   else if(e.type==='pump'){a='Pumpat';b=esc(e.side)+' · '+esc(String(e.amountMl))+' ml'+(e.note?' · '+esc(e.note):'');}
   const editFn=e.type==='feed'?`editFeed('${e.id}')`:e.type==='nightsleep'?`editNightSleep('${e.id}')`:`editNote('${e.id}')`;
   const editTitle=e.type==='feed'||e.type==='nightsleep'?'Ändra':'Kommentar';

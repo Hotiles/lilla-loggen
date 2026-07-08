@@ -199,6 +199,42 @@ test('formula: note is shown in feed', async ({ page }) => {
   await expect(page.locator('#feedList .ev .b').first()).toContainText('Extra hungrig');
 });
 
+test('formula: defaults to modersmjölksersättning', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+
+  await expect(page.locator('#fmTypeChips .chip.active')).toHaveCount(1);
+  await expect(page.locator('#fmTypeChips .chip.active')).toHaveAttribute('data-v', 'formula');
+});
+
+test('formula: expressed breast milk type is saved and labelled in feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.locator('#fmTypeChips .chip', { hasText: 'Utpumpad bröstmjölk' }).click();
+  await page.fill('#fmVal', '80');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  const kind = await page.evaluate(async () => (await allEvents())[0].kind);
+  expect(kind).toBe('bröstmjölk');
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('Utpumpad bröstmjölk');
+  await expect(page.locator('#feedList .ev .b').first()).toContainText('80 ml');
+});
+
+test('formula: resets the idle hero clock like a feed', async ({ page }) => {
+  await page.locator('.q').filter({ hasText: 'Ersättning' }).click();
+  await page.waitForSelector('#sheet.show');
+  await page.fill('#fmVal', '90');
+  await page.locator('.save').click();
+  await page.locator('#sheet').waitFor({ state: 'hidden' });
+
+  // Hjälten på hemskärmen räknar nu från ersättningen.
+  await expect(page.locator('#heroLabel')).toHaveText('Sedan senaste matning');
+  await expect(page.locator('#lastFeed')).toContainText('Ersättning');
+  await expect(page.locator('#lastFeed')).toContainText('90 ml');
+  await expect(page.locator('#timer')).not.toHaveText('––:––');
+});
+
 // ── Pump (pumpat) ───────────────────────────────────────────────────────────
 
 test('pump: empty amount is rejected', async ({ page }) => {

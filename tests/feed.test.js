@@ -262,6 +262,19 @@ test('idle hero suggests the opposite breast after a feed', async ({ page }) => 
   await expect(page.locator('#sideTag')).toContainText('Höger');
 });
 
+test('idle hero clock counts from the feed end, not the start', async ({ page }) => {
+  // Amning som startade för 70 min sedan och slutade för 30 min sedan.
+  // Från start = "Ca 1 tim", från slut = "Ca 30 min" – hinkarna skiljer sig åt.
+  await page.evaluate(async () => {
+    const now = Date.now();
+    await put(STORE, { id: uid(), type: 'feed', ts: now - 70 * 60000, end: now - 30 * 60000, durMs: 40 * 60000, side: 'Vänster', method: 'bröst' });
+    await render();
+  });
+
+  await expect(page.locator('#heroLabel')).toHaveText('Sedan senaste amning');
+  await expect(page.locator('#timer')).toHaveText('Ca 30 min');
+});
+
 test('active feed shows a mini indicator on other tabs', async ({ page }) => {
   await page.locator('#btnL').click();
   await expect(page.locator('#feedMini')).toBeHidden();
